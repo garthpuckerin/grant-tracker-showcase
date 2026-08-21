@@ -1,0 +1,24 @@
+{
+  "name": "grant-tracker-showcase",
+  "description": "Grant Tracker — public cockpit demo. A federal grant-management command center: awards, budgets, RBAC-gated reallocation approvals, compliance (2 CFR 200), and SF-425 federal reporting. Mock data; the engine is private.",
+  "homepage": "https://garthpuckerin-grant-tracker.vercel.app",
+  "private": true,
+  "version": "0.1.0",
+  "type": "module",
+  "scripts": {
+    "dev": "vite",
+    "build": "vite build",
+    "preview": "vite preview",
+    "test:unit": "node --test",
+    "test:e2e": "playwright test"
+  },
+  "dependencies": {
+    "react": "^18.2.0",
+    "react-dom": "^18.2.0"
+  },
+  "devDependencies": {
+    "@playwright/test": "^1.52.0",
+    "@vitejs/plugin-react": "^4.2.1",
+    "vite": "^5.0.8"
+  }
+}
