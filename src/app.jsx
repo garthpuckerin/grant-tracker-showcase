@@ -27,6 +27,8 @@ const App = () => {
   const [navOpen, setNavOpen] = React.useState(false);
   const [loaded, setLoaded] = React.useState(false);
   const searchRef = React.useRef(null);
+  const mainRef = React.useRef(null);
+  const firstRoute = React.useRef(true);
   const closeNav = React.useCallback(() => setNavOpen(false), []);
 
   // Enter the demo from the marketing landing — persist so reloads stay in.
@@ -81,6 +83,14 @@ const App = () => {
     try { localStorage.setItem('gt2-route', JSON.stringify(route)); } catch (e) {}
   }, [route]);
 
+  // A11y: move focus to the main region on route change so keyboard and screen-
+  // reader users land on the new screen's content, not on the nav control they
+  // activated. Skips the initial mount (nothing to move focus from yet).
+  React.useEffect(() => {
+    if (firstRoute.current) { firstRoute.current = false; return; }
+    mainRef.current?.focus();
+  }, [route]);
+
   const counts = {
     grants: D.grants.length,
     openTasks: D.tasks.filter(t => t.status !== 'COMPLETE').length,
@@ -115,13 +125,14 @@ const App = () => {
 
   return (
     <div className="app">
+      <a href="#main-content" className="skip-link">Skip to main content</a>
       <Sidebar route={route} navigate={navigate} counts={counts} open={navOpen} onClose={closeNav} onSignOut={signOut} />
       {navOpen && <div className="nav-backdrop" onClick={closeNav} aria-hidden="true" />}
       <div className="main">
         <Topbar route={route} navigate={navigate} search={search} setSearch={setSearch} onToggleNav={() => setNavOpen(o => !o)} searchRef={searchRef} />
-        <div className="main-inner">
+        <main className="main-inner" id="main-content" tabIndex={-1} ref={mainRef}>
           {screen}
-        </div>
+        </main>
       </div>
     </div>
   );

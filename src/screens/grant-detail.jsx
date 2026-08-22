@@ -102,7 +102,7 @@ export const GrantDetail = ({ navigate, route }) => {
           <div className="ph-actions">
             <button className="btn ghost" onClick={() => navigate({ name: 'sf425detail', gi: DATA.grants.indexOf(grant), period: 'FY25 ANNUAL', type: 'Annual', status: 'IN_PROGRESS', due: shiftIso('2026-06-15') })}><Icon name="download" size={12} /> SF-425</button>
             <button className="btn ghost" onClick={() => navigate({ name: 'reports' })}><Icon name="file" size={12} /> Reports</button>
-            <button className="btn"><Icon name="dots" size={12} /></button>
+            <button className="btn" aria-label="More actions" title="More actions"><Icon name="dots" size={12} /></button>
           </div>
         </div>
 

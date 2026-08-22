@@ -1264,6 +1264,28 @@ select:focus-visible {
   border: 0;
 }
 
+/* Skip-to-content link — off-screen until it receives keyboard focus, then it
+   slides into the top-left so keyboard users can jump past the nav. */
+.skip-link {
+  position: absolute;
+  left: 8px;
+  top: -48px;
+  z-index: 200;
+  padding: 8px 14px;
+  background: var(--ink);
+  color: var(--paper);
+  border-radius: 2px;
+  font-size: 13px;
+  font-weight: 500;
+  text-decoration: none;
+  transition: top 0.15s ease;
+}
+.skip-link:focus { top: 8px; }
+
+/* The main region is programmatically focused on route change (see App); that
+   container focus should not paint the keyboard outline. */
+.main-inner:focus { outline: none; }
+
 /* Filter-aware empty state — centered editorial block */
 .empty-state {
   display: flex;

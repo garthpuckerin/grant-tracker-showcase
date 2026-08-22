@@ -170,7 +170,7 @@ export const Sidebar = ({ route, navigate, counts, open = false, onClose, onSign
     { id: 'settings', name: 'Settings',    icon: 'settings', count: null },
   ];
   return (
-    <aside className={`sidebar ${open ? 'open' : ''}`}>
+    <aside className={`sidebar ${open ? 'open' : ''}`} role="navigation" aria-label="Primary">
       <div className="sidebar-brand">
         <span className="mark">G</span>
         <span className="word">Grant Tracker</span>
