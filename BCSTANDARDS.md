@@ -27,7 +27,7 @@
   → Constitution → topic standards → supporting docs.
 
 ## Code Comprehension (Comprehension Ladder Standard)
-
+<!-- bcstd:managed comprehension v1 -->
 - Graph repo_id: `github.com/garthpuckerin/grant-tracker-showcase`
 - This repo is **new and not yet ingested** into the mimir2-graph. Until it is,
   raw `Read`/`Grep` are the correct tools here; once ingested, query the ladder
@@ -35,6 +35,7 @@
   before raw reads for structure/behaviour/relationship questions. Note: this is
   a React app — the graph does not model JSX render edges, so grep for "what
   renders X" regardless.
+<!-- /bcstd:managed -->
 
 ## Git & Release
 
@@ -62,3 +63,16 @@
   reveal-season project's embargoed name/content. Vercel serves only `dist/`, so
   repo-root docs are not served by the live site — but this repo is public after
   the reveal, so treat every committed file as public.
+
+## Institutional Memory
+<!-- bcstd:managed memory v1 -->
+- The comprehension and memory habits are active client bindings, not passive
+  repository guidance. Each client must use the highest enforcement tier it
+  supports under the Comprehension Ladder Standard.
+- Recall Ogham with `hybrid_search` when starting work on a system that may
+  have prior context. Before ending, store decisions with rationale, gotchas,
+  and cross-session operational context with source, controlled tags, and a
+  deliberate TTL. Never store secrets or code-structure facts.
+- Canonical memory policy: `standards/Memory_Standard.md` in
+  blurred-concepts-engineering — it governs on any conflict.
+<!-- /bcstd:managed -->
