@@ -91,7 +91,7 @@ export const GrantDetail = ({ navigate, route }) => {
 
       {/* Editorial masthead */}
       <div style={{ borderBottom: '1px solid var(--ink)', paddingBottom: 24, marginBottom: 28 }}>
-        <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start', gap: 24, marginBottom: 16 }}>
+        <div className="gd-masthead-row" style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start', gap: 24, marginBottom: 16 }}>
           <div className="flex items-center gap-12">
             <span className="mono" style={{ fontSize: 11, letterSpacing: '0.14em', color: 'var(--ink-3)' }}>{grant.agency.toUpperCase()}</span>
             <span style={{ width: 1, height: 12, background: 'var(--rule-strong)' }}></span>
@@ -179,7 +179,7 @@ const OverviewTab = ({ grant, years, lineItems, grantTasks, navigate, setTab, se
             <span className="kicker">{grant.totalYears}-year award</span>
           </div>
           <div className="card-body">
-            <div style={{ display: 'grid', gridTemplateColumns: `repeat(${grant.totalYears}, 1fr)`, gap: 1, background: 'var(--rule)', border: '1px solid var(--rule)' }}>
+            <div className="gd-years" style={{ display: 'grid', gridTemplateColumns: `repeat(${grant.totalYears}, 1fr)`, gap: 1, background: 'var(--rule)', border: '1px solid var(--rule)' }}>
               {years.map(y => {
                 const isCurrent = y.n === grant.year;
                 const isPast = y.n < grant.year;

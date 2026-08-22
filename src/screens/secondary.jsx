@@ -63,7 +63,7 @@ export const Insights = ({ navigate }) => {
           const grant = D.grants.find(g => g.id === i.grantId);
           const color = insightColor(i);
           return (
-            <div key={i.id} style={{
+            <div key={i.id} className="insight-row" style={{
               display: 'grid',
               gridTemplateColumns: '4px 140px 1fr auto',
               gap: 18,
@@ -89,7 +89,7 @@ export const Insights = ({ navigate }) => {
                   </div>
                 )}
               </div>
-              <div style={{ display: 'flex', flexDirection: 'column', gap: 6 }}>
+              <div className="insight-actions" style={{ display: 'flex', flexDirection: 'column', gap: 6 }}>
                 <MockButton className="btn ghost" style={{ height: 28, fontSize: 11 }} label="Dismiss" message="Dismissing insights is mocked in this demo." />
                 <MockButton className="btn" style={{ height: 28, fontSize: 11 }} label="Take action" message="Insight actions are mocked in this demo." />
               </div>
@@ -138,7 +138,7 @@ export const Compliance = () => {
             <div className="card-title">Rule Framework Coverage</div>
             <span className="kicker">{frameworks.length} frameworks</span>
           </div>
-          <table className="ledger">
+          <div className="table-scroll"><table className="ledger">
             <thead>
               <tr>
                 <th>Framework</th>
@@ -161,7 +161,7 @@ export const Compliance = () => {
                 </tr>
               ))}
             </tbody>
-          </table>
+          </table></div>
         </div>
       </div>
 
@@ -266,7 +266,7 @@ export const Reports = () => {
         <div className="card-title">Scheduled Exports</div>
         <span className="kicker">4 active</span>
       </div>
-      <table className="ledger">
+      <div className="table-scroll"><table className="ledger">
         <thead>
           <tr>
             <th>Report</th>
@@ -294,7 +294,7 @@ export const Reports = () => {
             </tr>
           ))}
         </tbody>
-      </table>
+      </table></div>
     </div>
   </div>
   );
@@ -315,7 +315,7 @@ export const Documents = () => {
         </div>
       </div>
       <div className="card">
-        <table className="ledger">
+        <div className="table-scroll"><table className="ledger">
           <thead>
             <tr>
               <th>Document</th>
@@ -351,7 +351,7 @@ export const Documents = () => {
               );
             })}
           </tbody>
-        </table>
+        </table></div>
       </div>
     </div>
   );
@@ -384,7 +384,7 @@ export const SF425 = ({ navigate }) => {
         </div>
       </div>
       <div className="card">
-        <table className="ledger">
+        <div className="table-scroll"><table className="ledger">
           <thead>
             <tr>
               <th>Grant</th>
@@ -415,7 +415,7 @@ export const SF425 = ({ navigate }) => {
               </tr>
             ))}
           </tbody>
-        </table>
+        </table></div>
       </div>
     </div>
   );
@@ -511,7 +511,7 @@ export const SF425Detail = ({ navigate, route }) => {
         <div className="flex-col gap-24">
           <div className="card">
             <div className="card-head"><div className="card-title">10. Transactions</div><span className="kicker">cumulative · this award</span></div>
-            <table className="ledger">
+            <div className="table-scroll"><table className="ledger">
               <tbody>
                 <tr><td colSpan="3" className="kicker" style={{ padding: '12px 14px 6px' }}>Federal Cash</td></tr>
                 <SfRow line="10a" label="Cash receipts" value={r.receipts} />
@@ -533,12 +533,12 @@ export const SF425Detail = ({ navigate, route }) => {
                 <SfRow line="10n" label="Program income expended (addition)" value={r.piAddition} />
                 <SfRow line="10o" label="Unexpended program income" value={r.piUnexpended} derived="= 10l − 10m − 10n" />
               </tbody>
-            </table>
+            </table></div>
           </div>
 
           <div className="card">
             <div className="card-head"><div className="card-title">11. Indirect Expense</div><span className="kicker">2 CFR 200.414</span></div>
-            <table className="ledger">
+            <div className="table-scroll"><table className="ledger">
               <thead>
                 <tr><th>Type of Rate</th><th>Rate</th><th>Base</th><th>Period</th><th className="r">Amount Charged</th><th className="r">Federal Share</th></tr>
               </thead>
@@ -552,7 +552,7 @@ export const SF425Detail = ({ navigate, route }) => {
                   <td className="num r">{money0(r.indirectCharged)}</td>
                 </tr>
               </tbody>
-            </table>
+            </table></div>
           </div>
         </div>
 
@@ -677,7 +677,7 @@ export const Members = () => {
         </div>
       ) : (
         <div className="card">
-          <table className="ledger">
+          <div className="table-scroll"><table className="ledger">
             <thead>
               <tr>
                 <th>Member</th>
@@ -705,7 +705,7 @@ export const Members = () => {
                 </tr>
               ))}
             </tbody>
-          </table>
+          </table></div>
         </div>
       )}
 
@@ -1034,7 +1034,7 @@ export const Settings = () => {
             <div className="card-title">Sponsor Profiles</div>
             <span className="kicker">{SPONSOR_PROFILES.length} configured</span>
           </div>
-          <table className="ledger">
+          <div className="table-scroll"><table className="ledger">
             <thead>
               <tr><th>Sponsor</th><th>Policy basis</th><th>Reporting cadence</th><th>Status</th><th></th></tr>
             </thead>
@@ -1049,7 +1049,7 @@ export const Settings = () => {
                 </tr>
               ))}
             </tbody>
-          </table>
+          </table></div>
         </div>
       )}
 
@@ -1077,7 +1077,7 @@ export const Settings = () => {
             <div className="card-title">Rule Engine</div>
             <span className="status active"><span className="dot"></span>Monitoring</span>
           </div>
-          <table className="ledger">
+          <div className="table-scroll"><table className="ledger">
             <thead>
               <tr><th>Rule</th><th>Check</th><th>Severity</th><th>Agent Review</th></tr>
             </thead>
@@ -1091,7 +1091,7 @@ export const Settings = () => {
                 </tr>
               ))}
             </tbody>
-          </table>
+          </table></div>
         </div>
       )}
 

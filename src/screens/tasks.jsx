@@ -4,7 +4,7 @@ import { DATA } from '../data.js';
 import { fmt, Icon, Status } from '../atoms.jsx';
 import { useStore } from '../store.js';
 import { CreateTaskForm } from '../forms.jsx';
-import { useToast } from '../toast.jsx';
+import { useToast, MockButton } from '../toast.jsx';
 
 export const Tasks = ({ navigate, search }) => {
   const tasks = useStore((s) => s.tasks);
@@ -52,7 +52,7 @@ export const Tasks = ({ navigate, search }) => {
           </p>
         </div>
         <div className="ph-actions">
-          <button className="btn ghost"><Icon name="filter" size={12} /> Filters</button>
+          <MockButton className="btn ghost" icon="filter" label="Filters" message="Advanced task filters are mocked in this demo — use the status groups and search." />
           <button className="btn accent" onClick={() => setShowForm(true)}><Icon name="plus" size={12} /> New task</button>
         </div>
       </div>
@@ -76,7 +76,7 @@ export const Tasks = ({ navigate, search }) => {
         </div>
       </div>
 
-      <div style={{ display: 'flex', gap: 12, marginBottom: 18, alignItems: 'center' }}>
+      <div style={{ display: 'flex', gap: 12, marginBottom: 18, alignItems: 'center', flexWrap: 'wrap' }}>
         <div className="pill-group">
           {['ALL', 'OPEN', 'IN_PROGRESS', 'COMPLETE'].map(s => (
             <button key={s} className={filter === s ? 'on' : ''} onClick={() => setFilter(s)}>{s.replace('_', ' ')}</button>
@@ -116,7 +116,7 @@ export const Tasks = ({ navigate, search }) => {
                 const grant = D.grants.find(gg => gg.id === t.grantId);
                 const days = fmt.daysUntil(t.due);
                 return (
-                  <div key={t.id} style={{
+                  <div key={t.id} className="task-row" style={{
                     display: 'grid',
                     gridTemplateColumns: '24px 1fr auto auto auto auto',
                     gap: 16,

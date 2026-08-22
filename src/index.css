@@ -1233,6 +1233,105 @@ button { font-family: inherit; cursor: pointer; }
     min-width: 100%;
     flex-basis: 100%;
   }
+
+  /* Page header stacks on phones: the title column takes the full width and
+     the action buttons wrap onto their own row beneath it. Without this the
+     nowrap flex row squeezed the title to ~140px (one word per line) and the
+     flex-shrink:0 actions ran off the right edge of the viewport. */
+  .page-head {
+    flex-direction: column;
+    align-items: stretch;
+    gap: 14px;
+  }
+  .page-head h1 {
+    font-size: 34px;
+    margin-bottom: 12px;
+  }
+  .page-head .ph-actions {
+    flex-wrap: wrap;
+  }
+  .page-head .ph-actions .btn {
+    flex: 1 1 auto;
+    justify-content: center;
+  }
+
+  /* Tab strips (grant detail, Settings) wrap instead of running off-screen. */
+  .tabs {
+    flex-wrap: wrap;
+  }
+
+  /* Settings: the two-column shell and its two-column form go single-column
+     (the desktop minmax(320px) column alone exceeds a phone viewport). */
+  .settings-grid,
+  .settings-form {
+    grid-template-columns: 1fr;
+  }
+
+  /* AI Insights rows: collapse the 4-column desktop grid (rule · agent · body ·
+     actions) to rule + content, with the actions as a row beneath the body. */
+  .insight-row {
+    grid-template-columns: 4px 1fr !important;
+  }
+  .insight-row > :nth-child(n + 3) {
+    grid-column: 2;
+  }
+  .insight-actions {
+    flex-direction: row !important;
+  }
+
+  /* Task rows: the 6-column desktop grid (check · title · grant · priority ·
+     assignee · due) collapses to check + content, meta stacking beneath. */
+  .task-row {
+    grid-template-columns: 24px 1fr !important;
+    gap: 6px 16px !important;
+  }
+  .task-row > :nth-child(n + 3) {
+    grid-column: 2;
+    text-align: left !important;
+    min-width: 0 !important;
+  }
+
+  /* Grant detail: the masthead header row stacks (agency/number/status line,
+     then the action buttons wrapping beneath); the multi-year timeline grid
+     reflows to as many 96px-min columns as fit instead of one per year. */
+  .gd-masthead-row {
+    flex-direction: column;
+    align-items: stretch !important;
+    gap: 12px !important;
+  }
+  .gd-masthead-row .ph-actions {
+    flex-wrap: wrap;
+  }
+  .gd-years {
+    grid-template-columns: repeat(auto-fit, minmax(96px, 1fr)) !important;
+  }
+  .gd-masthead-row + h1,
+  .page-head h1 {
+    font-size: 34px;
+  }
+
+  /* Grid/flex children must not inherit their content's min-content width:
+     a 1fr track is minmax(auto, 1fr), so a wide ledger table inside a card
+     inside a grid column would otherwise widen the whole column to ~600px and
+     push the page sideways. min-width:0 lets the table scroll in its own
+     .table-scroll container instead. */
+  .g-split > *,
+  .g-dense > *,
+  .bento > *,
+  .flex-col,
+  .flex-col > * {
+    min-width: 0;
+  }
+
+  /* Card headers: a long kicker (e.g. "1 pending · acting as Finance …")
+     wraps beneath the title instead of running past the card edge. */
+  .card-head {
+    flex-wrap: wrap;
+    row-gap: 6px;
+  }
+  .card-head .kicker {
+    white-space: normal;
+  }
 }
 
 /* ============================================================
