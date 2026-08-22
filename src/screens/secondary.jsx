@@ -137,22 +137,9 @@ export const Compliance = () => {
     markScanned();
     toast(`Scan complete — ${portfolio.totalRules} rules evaluated, ${openFindings.length} open finding${openFindings.length === 1 ? '' : 's'}.`);
   };
-  // Real action on mock data: a genuine CSV of the framework table + findings.
+  // Demo-scoped export: explain rather than produce a file.
   const exportAudit = () => {
-    const q = (c) => `"${String(c).replace(/"/g, '""')}"`;
-    const lines = [
-      ['Framework', 'Source', 'Rules', 'Passing', 'Findings', 'Score'].map(q).join(','),
-      ...frameworks.map((r) => [r.fw, r.src, r.rules, r.pass, r.find, r.score].map(q).join(',')),
-      '',
-      ['Finding', 'Rule', 'Framework', 'Grant', 'Severity', 'Status', 'Note'].map(q).join(','),
-      ...findings.map((f) => [f.title, f.rule, f.fw, f.grant, f.sev, f.status, f.note].map(q).join(',')),
-    ];
-    const url = URL.createObjectURL(new Blob([lines.join('\r\n')], { type: 'text/csv;charset=utf-8' }));
-    const a = document.createElement('a');
-    a.href = url; a.download = 'compliance-audit.csv';
-    document.body.appendChild(a); a.click(); a.remove();
-    URL.revokeObjectURL(url);
-    toast('Compliance audit exported (CSV).');
+    toast(`Audit export would include ${frameworks.length} frameworks and ${findings.length} findings (CSV / PDF) — file export is handled by the production build.`, 'indigo', 'Demo');
   };
 
   return (
@@ -287,12 +274,7 @@ const ReportViewer = ({ report, onClose }) => {
   if (!report) return null;
   const data = reportData(report.kind);
   const exportCsv = () => {
-    const q = (c) => `"${String(c).replace(/"/g, '""')}"`;
-    const csv = [data.columns.map(q).join(','), ...data.rows.map((r) => r.map(q).join(','))].join('\r\n');
-    const url = URL.createObjectURL(new Blob([csv], { type: 'text/csv;charset=utf-8' }));
-    const a = document.createElement('a'); a.href = url; a.download = report.title.toLowerCase().replace(/[^a-z0-9]+/g, '-') + '.csv';
-    document.body.appendChild(a); a.click(); a.remove(); URL.revokeObjectURL(url);
-    toast(`“${report.title}” exported (CSV).`);
+    toast(`“${report.title}” would export ${data.rows.length} rows as CSV — file export is handled by the production build.`, 'indigo', 'Demo');
   };
   return (
     <Drawer open={!!report} onClose={onClose} title={report.title} subtitle={`${report.kind} · last run ${report.last}`}>

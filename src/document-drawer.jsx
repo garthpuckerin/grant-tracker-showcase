@@ -18,37 +18,16 @@ import { validate, isValid, documentRules, DOCUMENT_TYPE } from './validate.js';
 const titleCase = (s) => s.charAt(0) + s.slice(1).toLowerCase();
 
 // Generate and save a real file for a fixture document.
-export function downloadDocument(doc) {
-  const grant = DATA.grants.find((g) => g.id === doc.grantId);
-  const body = [
-    `${doc.name}`,
-    ''.padEnd(doc.name.length, '='),
-    '',
-    `Type:        ${doc.type}`,
-    `Award:       ${grant ? `${grant.number} — ${grant.title}` : '—'}`,
-    `Uploaded by: ${doc.by?.name || '—'}`,
-    `Date:        ${doc.date}`,
-    `Size:        ${doc.size}`,
-    '',
-    'Portfolio demo — this document is an illustrative fixture. The production',
-    'build stores and serves the real file from the institution’s document store.',
-    '',
-  ].join('\n');
-  const url = URL.createObjectURL(new Blob([body], { type: 'text/plain;charset=utf-8' }));
-  const a = document.createElement('a');
-  a.href = url;
-  a.download = doc.name.replace(/\.(pdf|docx|xlsx)$/i, '') + '.txt';
-  document.body.appendChild(a);
-  a.click();
-  a.remove();
-  URL.revokeObjectURL(url);
-}
+// Demo-scoped: file storage is outside the cockpit. Downloading explains that
+// instead of producing a file (a surprise save dialog is not a demo feature).
+export const DOWNLOAD_NOTICE = (doc) =>
+  `“${doc.name}” would download here — file storage and retrieval live in the production document store, outside this demo’s scope.`;
 
 export const DocumentDrawer = ({ doc, onClose, navigate }) => {
   const toast = useToast();
   if (!doc) return null;
   const grant = DATA.grants.find((g) => g.id === doc.grantId);
-  const download = () => { downloadDocument(doc); toast(`Downloaded “${doc.name}”.`); };
+  const download = () => { toast(DOWNLOAD_NOTICE(doc), 'indigo', 'Demo'); };
   const openGrant = () => { onClose(); if (grant) navigate({ name: 'grant', id: grant.id, grant }); };
   return (
     <Drawer open={!!doc} onClose={onClose} title={doc.name} subtitle={grant ? `${grant.agencyShort} · ${grant.number}` : 'Workspace document'}>

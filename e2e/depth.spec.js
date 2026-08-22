@@ -86,9 +86,7 @@ test('uploading a document adds it to the library, the grant tab, and the sideba
   // Row → drawer with a real Download action.
   await page.locator('table.ledger').getByText('Q2 Progress Report.pdf', { exact: true }).first().click()
   await expect(page.getByRole('dialog')).toBeVisible()
-  const [download] = await Promise.all([
-    page.waitForEvent('download'),
-    page.getByRole('dialog').getByRole('button', { name: 'Download' }).click(),
-  ])
-  expect(download.suggestedFilename()).toMatch(/Q2 Progress Report/)
+  // Demo-scoped: download explains itself instead of producing a file.
+  await page.getByRole('dialog').getByRole('button', { name: 'Download' }).click()
+  await expect(page.locator('.toast-flag')).toContainText('would download')
 })

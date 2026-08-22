@@ -25,11 +25,9 @@ test('a report card opens a real viewer with data and a CSV export', async ({ pa
   const dialog = page.getByRole('dialog')
   await expect(dialog).toBeVisible()
   await expect(dialog.locator('table.ledger')).toBeVisible()
-  const [download] = await Promise.all([
-    page.waitForEvent('download'),
-    dialog.getByRole('button', { name: 'Export CSV' }).click(),
-  ])
-  expect(download.suggestedFilename()).toBe('sponsor-concentration.csv')
+  // Demo-scoped: export explains itself instead of producing a file.
+  await dialog.getByRole('button', { name: 'Export CSV' }).click()
+  await expect(page.locator('.toast-flag')).toContainText('would export')
 })
 
 test('SF-425 certification is RBAC-gated: a PI is blocked, Finance certifies, the index shows COMPLETE', async ({ page }) => {

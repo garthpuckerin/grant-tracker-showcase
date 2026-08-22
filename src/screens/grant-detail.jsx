@@ -11,7 +11,7 @@ import {
   ROLE_LABEL,
 } from '../rbac.js';
 import { BudgetLineItemForm, ReallocationRequestForm } from '../forms.jsx';
-import { DocumentDrawer, UploadDocumentForm, downloadDocument } from '../document-drawer.jsx';
+import { DocumentDrawer, UploadDocumentForm, DOWNLOAD_NOTICE } from '../document-drawer.jsx';
 import { TaskDrawer } from '../task-drawer.jsx';
 import { CreateTaskForm } from '../forms.jsx';
 import { useToast, MockButton } from '../toast.jsx';
@@ -425,23 +425,9 @@ const BudgetTab = ({ grant, years, lineItems, selectedYear, setSelectedYear }) =
     toast('Reallocation denied.');
   };
 
-  // Real action on mock data (§4 ladder tier 1): genuinely build and download a
-  // CSV of the current year's line-item ledger.
+  // Demo-scoped export: explain rather than produce a file.
   const exportCsv = () => {
-    const header = ['Category', 'Description', 'Budgeted', 'Spent', 'Encumbered', 'Balance'];
-    const rows = lineItems.map((l) => [l.cat, l.desc, l.budgeted, l.spent, l.encumbered, l.budgeted - l.spent - l.encumbered]);
-    const csv = [header, ...rows]
-      .map((r) => r.map((c) => `"${String(c).replace(/"/g, '""')}"`).join(','))
-      .join('\r\n');
-    const url = URL.createObjectURL(new Blob([csv], { type: 'text/csv;charset=utf-8' }));
-    const a = document.createElement('a');
-    a.href = url;
-    a.download = `${grant.number}-Y${selectedYear}-budget.csv`;
-    document.body.appendChild(a);
-    a.click();
-    a.remove();
-    URL.revokeObjectURL(url);
-    toast('Budget CSV exported.');
+    toast(`${grant.number} · Year ${selectedYear} budget would export as CSV (${lineItems.length} line items) — file export is handled by the production build.`, 'indigo', 'Demo');
   };
 
   return (
@@ -681,7 +667,7 @@ const DocumentsTab = ({ docs, grantId, navigate }) => {
             <td className="mono" style={{ fontSize: 12, color: 'var(--ink-3)' }}>{d.date}</td>
             <td className="num r muted">{d.size}</td>
             <td>
-              <button className="btn-link" aria-label="Download document" onClick={(e) => { e.stopPropagation(); downloadDocument(d); toast(`Downloaded “${d.name}”.`); }}><Icon name="download" size={12} /></button>
+              <button className="btn-link" aria-label="Download document" onClick={(e) => { e.stopPropagation(); toast(DOWNLOAD_NOTICE(d), 'indigo', 'Demo'); }}><Icon name="download" size={12} /></button>
             </td>
           </tr>
         ))}
