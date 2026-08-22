@@ -48,6 +48,18 @@ export const addTask = (task) => {
   emit();
 };
 
+// Patch one task immutably (status, priority, assignee, due, title, desc…).
+// Every consumer — task groups, stats, sidebar count, dashboard overdue copy,
+// grant-detail task tab — subscribes to the store, so a completion re-derives
+// everywhere at once.
+export const updateTask = (id, patch) => {
+  state = {
+    ...state,
+    tasks: state.tasks.map((t) => (t.id === id ? { ...t, ...patch } : t)),
+  };
+  emit();
+};
+
 // Append a budget line item under a given grant id immutably.
 export const addLineItem = (grantId, item) => {
   const existing = state.lineItems[grantId] || [];

@@ -4,10 +4,14 @@ import { DATA } from '../data.js';
 import { fmt, Icon, Donut, Utilization, BarGroup, LineArea } from '../atoms.jsx';
 import { insightColor, utilizationColor } from '../viz-color.js';
 import { MockButton } from '../toast.jsx';
+import { useStore } from '../store.js';
 import { TODAY_MEDIUM, TODAY_FISCAL, TODAY_FQ_REVERSED } from '../dates.js';
 
 export const Dashboard = ({ navigate }) => {
-  const D = DATA;
+  // Tasks come from the store so completing one re-derives the overdue copy,
+  // the open-task KPI, and the deadline rail here.
+  const liveTasks = useStore((s) => s.tasks);
+  const D = { ...DATA, tasks: liveTasks };
   const totalBudget = D.grants.reduce((s, g) => s + g.budget, 0);
   const totalSpent = D.grants.reduce((s, g) => s + g.spent, 0);
   const activeCount = D.grants.filter(g => g.status === 'ACTIVE').length;

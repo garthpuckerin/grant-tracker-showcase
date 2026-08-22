@@ -53,6 +53,8 @@ export const GrantDetail = ({ navigate, route }) => {
   // Approved-and-applied reallocations shift category budgets live; subscribe so
   // the ledger re-derives the moment Finance approves a transfer.
   const reallocations = useStore((s) => s.reallocations);
+  // Tasks from the store so completing one updates this grant's Tasks tab.
+  const liveTasks = useStore((s) => s.tasks);
 
   // We'll synthesize budget data if not the rich grant
   const hasFullData = grant.id === '1';
@@ -79,7 +81,7 @@ export const GrantDetail = ({ navigate, route }) => {
     spent: i + 1 <= grant.year ? (grant.spent / grant.year) : 0,
   }));
 
-  const grantTasks = D.tasks.filter(t => t.grantId === grant.id);
+  const grantTasks = liveTasks.filter(t => t.grantId === grant.id);
   const grantDocs = D.documents.filter(d => d.grantId === grant.id);
 
   return (

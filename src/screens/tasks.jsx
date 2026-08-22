@@ -2,8 +2,9 @@
 import React from 'react';
 import { DATA } from '../data.js';
 import { fmt, Icon, Status } from '../atoms.jsx';
-import { useStore } from '../store.js';
+import { useStore, updateTask } from '../store.js';
 import { CreateTaskForm } from '../forms.jsx';
+import { TaskDrawer } from '../task-drawer.jsx';
 import { useToast, MockButton } from '../toast.jsx';
 
 export const Tasks = ({ navigate, search }) => {
@@ -13,6 +14,17 @@ export const Tasks = ({ navigate, search }) => {
   const [showForm, setShowForm] = React.useState(false);
   const [filter, setFilter] = React.useState('ALL');
   const [priority, setPriority] = React.useState('ALL');
+  // Selected task id (not the object) so the drawer always renders the LIVE
+  // store record after an in-drawer edit.
+  const [selectedId, setSelectedId] = React.useState(null);
+  const selected = tasks.find((t) => t.id === selectedId) || null;
+
+  // Inline completion from the row's check control — the fastest interaction.
+  const toggleDone = (t) => {
+    const done = t.status === 'COMPLETE';
+    updateTask(t.id, { status: done ? 'OPEN' : 'COMPLETE' });
+    toast(done ? `“${t.title}” reopened.` : `“${t.title}” marked complete.`);
+  };
 
   const visibleTasks = D.tasks
     .filter(t => filter === 'ALL' || t.status === filter)
@@ -37,6 +49,7 @@ export const Tasks = ({ navigate, search }) => {
 
   return (
     <div>
+      <TaskDrawer task={selected} onClose={() => setSelectedId(null)} navigate={navigate} />
       {showForm && (
         <CreateTaskForm
           onClose={() => setShowForm(false)}
@@ -116,17 +129,33 @@ export const Tasks = ({ navigate, search }) => {
                 const grant = D.grants.find(gg => gg.id === t.grantId);
                 const days = fmt.daysUntil(t.due);
                 return (
-                  <div key={t.id} className="task-row" style={{
-                    display: 'grid',
-                    gridTemplateColumns: '24px 1fr auto auto auto auto',
-                    gap: 16,
-                    padding: '14px 20px',
-                    borderBottom: i < g.tasks.length - 1 ? '1px solid var(--rule)' : 'none',
-                    alignItems: 'center',
-                  }}>
-                    <span style={{ width: 16, height: 16, border: '1px solid var(--rule-strong)', borderRadius: '50%', display: 'grid', placeItems: 'center', background: t.status === 'COMPLETE' ? 'var(--ink)' : 'transparent' }}>
-                      {t.status === 'COMPLETE' && <span style={{ color: 'var(--paper)', fontSize: 10 }}>✓</span>}
-                    </span>
+                  <div
+                    key={t.id}
+                    className="task-row row-h"
+                    role="button"
+                    tabIndex={0}
+                    aria-label={`Open task: ${t.title}`}
+                    onClick={() => setSelectedId(t.id)}
+                    onKeyDown={(e) => { if (e.key === 'Enter' || e.key === ' ') { e.preventDefault(); setSelectedId(t.id); } }}
+                    style={{
+                      display: 'grid',
+                      gridTemplateColumns: '24px 1fr auto auto auto auto',
+                      gap: 16,
+                      padding: '14px 20px',
+                      borderBottom: i < g.tasks.length - 1 ? '1px solid var(--rule)' : 'none',
+                      alignItems: 'center',
+                      cursor: 'pointer',
+                    }}>
+                    <button
+                      type="button"
+                      className="task-check"
+                      aria-label={t.status === 'COMPLETE' ? `Reopen: ${t.title}` : `Mark complete: ${t.title}`}
+                      aria-pressed={t.status === 'COMPLETE'}
+                      onClick={(e) => { e.stopPropagation(); toggleDone(t); }}
+                      style={{ width: 18, height: 18, padding: 0, border: '1px solid var(--rule-strong)', borderRadius: '50%', display: 'grid', placeItems: 'center', background: t.status === 'COMPLETE' ? 'var(--ink)' : 'transparent', cursor: 'pointer' }}
+                    >
+                      {t.status === 'COMPLETE' && <span style={{ color: 'var(--paper)', fontSize: 10, lineHeight: 1 }}>✓</span>}
+                    </button>
                     <div>
                       <div style={{ fontSize: 13.5, fontWeight: 500, marginBottom: 3, textDecoration: t.status === 'COMPLETE' ? 'line-through' : 'none', textDecorationColor: 'var(--ink-3)' }}>{t.title}</div>
                       <div className="muted" style={{ fontSize: 12 }}>{t.desc}</div>

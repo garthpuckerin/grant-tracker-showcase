@@ -9,6 +9,7 @@ import { Tasks } from './screens/tasks.jsx';
 import { Insights, Compliance, Reports, Documents, SF425, SF425Detail, Members, Settings } from './screens/secondary.jsx';
 import { WorkspaceSkeleton } from './skeleton.jsx';
 import { Landing } from './Landing.jsx';
+import { useStore } from './store.js';
 
 // Marketing-landing gate key. SESSION-scoped (sessionStorage), so in-session
 // reloads skip the pitch but a fresh visit — including a reveal-day teaser
@@ -93,9 +94,13 @@ const App = () => {
     mainRef.current?.focus();
   }, [route]);
 
+  // Live collections — the sidebar badges must re-derive when a task is
+  // completed or a grant is created, so read the store, not the static data.
+  const liveTasks = useStore((s) => s.tasks);
+  const liveGrants = useStore((s) => s.grants);
   const counts = {
-    grants: D.grants.length,
-    openTasks: D.tasks.filter(t => t.status !== 'COMPLETE').length,
+    grants: liveGrants.length,
+    openTasks: liveTasks.filter(t => t.status !== 'COMPLETE').length,
     docs: D.documents.length,
     insights: D.insights.length,
   };
