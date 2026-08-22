@@ -91,7 +91,11 @@ export const GrantsList = ({ navigate, search }) => {
   const [statusFilter, setStatusFilter] = React.useState('ALL');
   const [agency, setAgency] = React.useState('ALL');
   const [sort, setSort] = React.useState('utilization');
-  const [view, setView] = React.useState('table'); // table | cards
+  // table | cards — phones open in the card view (a 7-column ledger is not a
+  // mobile UI); desktop keeps the ledger. The toggle still works either way.
+  const [view, setView] = React.useState(() =>
+    (typeof window !== 'undefined' && window.matchMedia && window.matchMedia('(max-width: 720px)').matches) ? 'cards' : 'table'
+  );
   const [risk, setRisk] = React.useState(false);     // Saved view: at-risk
   const [closing, setClosing] = React.useState(false); // Saved view: closing this FY
 

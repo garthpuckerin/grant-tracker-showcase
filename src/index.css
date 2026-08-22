@@ -1977,3 +1977,89 @@ select.field-input { cursor: pointer; }
   .onb-role { min-height: 0; }
   .onb-step-label { display: none; }
 }
+
+/* ============================================================
+   Mobile UI (≤720px) — bottom tab bar, card-lists, full-screen
+   sheets, 44px targets. Desktop markup is untouched; this is a
+   second presentation of the same screens, not a reflow.
+   ============================================================ */
+.mtab { display: none; }
+
+@media (max-width: 720px) {
+  /* Bottom tab bar — the primary nav on phones. */
+  .mtab {
+    position: fixed;
+    left: 0; right: 0; bottom: 0;
+    z-index: 150;
+    display: grid;
+    grid-template-columns: repeat(5, 1fr);
+    background: var(--surface);
+    border-top: 1px solid var(--rule-strong);
+    padding: 6px 4px calc(6px + env(safe-area-inset-bottom, 0px));
+  }
+  .mtab-item {
+    display: flex; flex-direction: column; align-items: center; justify-content: center;
+    gap: 4px; min-height: 52px;
+    background: none; border: 0; border-radius: 2px;
+    color: var(--ink-3); font: inherit; font-size: 10.5px; letter-spacing: 0.02em;
+    cursor: pointer;
+  }
+  .mtab-item.on { color: var(--ink); }
+  .mtab-item.on .mtab-icon { color: var(--accent); }
+  .mtab-icon { position: relative; display: grid; place-items: center; }
+  .mtab-badge {
+    position: absolute; top: -7px; right: -11px;
+    min-width: 16px; height: 16px; padding: 0 4px; border-radius: 8px;
+    background: var(--accent); color: var(--paper);
+    font-family: var(--font-mono); font-size: 9.5px; line-height: 16px; text-align: center;
+  }
+  .main-inner { padding-bottom: 96px; }
+  .nav-toggle { display: none !important; }
+
+  /* Card-lists: every ledger table becomes a stack of labeled cards. */
+  .table-scroll { overflow: visible; }
+  .table-scroll table.ledger,
+  .table-scroll table.ledger tbody,
+  .table-scroll table.ledger tfoot { display: block; width: 100%; }
+  .table-scroll table.ledger thead { display: none; }
+  .table-scroll table.ledger tr {
+    display: grid;
+    grid-template-columns: 1fr 1fr;
+    gap: 8px 14px;
+    padding: 14px 16px;
+    border-bottom: 1px solid var(--rule);
+  }
+  .table-scroll table.ledger td {
+    display: flex; flex-direction: column; gap: 3px;
+    padding: 0; border: 0; min-width: 0;
+    text-align: left !important;
+    font-size: 13px;
+  }
+  .table-scroll table.ledger td:first-child {
+    grid-column: 1 / -1;
+    font-size: 14.5px; font-weight: 500;
+  }
+  .table-scroll table.ledger td:first-child .gn { display: block; margin-top: 2px; }
+  .table-scroll table.ledger td[data-label]::before {
+    content: attr(data-label);
+    font-family: var(--font-mono); font-size: 9.5px; letter-spacing: 0.12em;
+    text-transform: uppercase; color: var(--ink-3);
+  }
+  .table-scroll table.ledger td:not([data-label]) { grid-column: 1 / -1; }
+  .table-scroll table.ledger td:not([data-label]):empty { display: none; }
+  .table-scroll table.ledger tfoot tr { background: var(--paper-tint); }
+
+  /* Drawers and modals are full-screen sheets on phones. */
+  .drawer-backdrop { justify-content: stretch; }
+  .drawer-panel { max-width: 100%; border-left: 0; animation: sheet-up 0.22s ease; }
+  @keyframes sheet-up { from { transform: translateY(18px); opacity: 0; } to { transform: none; opacity: 1; } }
+  .modal-card { width: 100% !important; max-width: 100% !important; max-height: 100dvh; border-radius: 0; }
+
+  /* Touch targets ≥ 44px. */
+  .btn { height: auto; min-height: 44px; }
+  .btn-link { min-height: 32px; }
+  .tb-icon { width: 44px; height: 44px; }
+  .tabs button, .pill-group button { min-height: 44px; }
+  .sidebar-item { min-height: 48px; }
+  .task-check { width: 24px !important; height: 24px !important; }
+}

@@ -10,6 +10,8 @@ import { Insights, Compliance, Reports, Documents, SF425, SF425Detail, Members, 
 import { WorkspaceSkeleton } from './skeleton.jsx';
 import { Landing } from './Landing.jsx';
 import { Onboarding } from './Onboarding.jsx';
+import { MobileTabBar } from './mobile-tabs.jsx';
+import { installCardify } from './cardify.js';
 import { useStore } from './store.js';
 
 // Marketing-landing gate key. SESSION-scoped (sessionStorage), so in-session
@@ -119,6 +121,10 @@ const App = () => {
     mainRef.current?.focus();
   }, [route]);
 
+  // Mobile card-lists: label every ledger cell with its column header so the
+  // ≤720px card layout reads correctly. Re-runs on DOM changes (observer).
+  React.useEffect(() => installCardify(mainRef.current), [entered, onboarded, loaded]);
+
   // Live collections — the sidebar badges must re-derive when a task is
   // completed or a grant is created, so read the store, not the static data.
   const liveTasks = useStore((s) => s.tasks);
@@ -171,6 +177,7 @@ const App = () => {
           {screen}
         </main>
       </div>
+      <MobileTabBar route={route} navigate={navigate} counts={counts} moreOpen={navOpen} onMore={() => setNavOpen(o => !o)} />
     </div>
   );
 };
