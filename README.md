@@ -39,6 +39,12 @@ system rebuilt 28 years later, by someone who has actually run the workflow.
   expenditures** and a live validator proves the report **cross-foots** before it can be certified.
 - **Compliance** — a portfolio rule engine (2 CFR 200, NIH GPS, NSF PAPPG, institutional) whose
   score, findings, and per-grant slices all derive from **one dataset**, so the numbers can't diverge
+- **Everything works end to end on mock data** — open a task and complete it, resolve a compliance
+  finding, dismiss an insight, upload a document, invite a member, certify a filing — and the change
+  re-derives across every screen that shows it (sidebar counts, dashboard, the grant's tabs)
+- **A welcome tour for non-experts** — what an award is, the vocabulary (PI, F&A, period of
+  performance, SF-425…), and the role you'll act as; replayable from Help
+- **A real phone UI** — bottom tab bar, labeled card-lists instead of tables, full-screen sheets
 - **Multi-agent AI insights**, documents, tasks, members, and a token-driven design system
   (light / beige / dark + density) that applies live
 
