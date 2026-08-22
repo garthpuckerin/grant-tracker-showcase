@@ -173,6 +173,17 @@ const DATA = (() => {
       decidedBy: null, decidedAt: null, applied: false },
   ];
 
+  // ── SF-425 filings register ──────────────────────────────────────────────
+  // `gi` indexes `grants`. Status moves OPEN → IN_PROGRESS → COMPLETE when an
+  // authorized official certifies the report (store.certifyFiling, RBAC-gated).
+  const filings = [
+    { id: 'sf1', gi: 0, period: 'FY25 ANNUAL', type: 'Annual',    status: 'IN_PROGRESS', due: shiftIso('2026-06-15') },
+    { id: 'sf2', gi: 1, period: 'FY25 Q4',     type: 'Quarterly', status: 'OPEN',        due: shiftIso('2026-05-30') },
+    { id: 'sf3', gi: 3, period: 'FY25 FINAL',  type: 'Final',     status: 'IN_PROGRESS', due: shiftIso('2026-06-12') },
+    { id: 'sf4', gi: 2, period: 'FY24 ANNUAL', type: 'Annual',    status: 'COMPLETE',    due: shiftIso('2026-03-01'), certifiedBy: 'u5', certifiedAt: shiftIso('2026-02-24') },
+    { id: 'sf5', gi: 5, period: 'FY25 FINAL',  type: 'Final',     status: 'OPEN',        due: shiftIso('2026-09-30') },
+  ];
+
   // Spending data by month — a trailing-12 series. The VALUES preserve their
   // original oldest→newest order; the month LABELS are re-derived so the series
   // always ends at the current month (and the dashboard "FY" range, which drops
@@ -227,7 +238,7 @@ const DATA = (() => {
     return Array.from(m.values()).sort((a,b) => b.budget - a.budget);
   })();
 
-  return { users, grants, tasks, documents, reallocations, monthly, insights, agencyBreakdown, compliance };
+  return { users, grants, tasks, documents, reallocations, filings, monthly, insights, agencyBreakdown, compliance };
 })();
 
 export { DATA };

@@ -7,6 +7,8 @@ import {
   canDecideReallocation,
   requestDeniedReason,
   decideDeniedReason,
+  canCertifyReport,
+  certifyDeniedReason,
 } from './rbac.js';
 
 const admin = { id: 'u1', role: ROLES.ADMIN };
@@ -46,6 +48,14 @@ test('deciding: no one may approve their own request (separation of duties)', ()
   const ownReq = { id: 'r9', requestedBy: 'u1', status: 'PENDING' };
   assert.equal(canDecideReallocation(admin, ownReq), false);
   assert.match(decideDeniedReason(admin, ownReq), /separation of duties/i);
+});
+
+test('certifying an SF-425: Finance/Admin may, a PI may not (2 CFR 200.415)', () => {
+  assert.equal(canCertifyReport(finance), true);
+  assert.equal(canCertifyReport(admin), true);
+  assert.equal(canCertifyReport(piOwner), false);
+  assert.match(certifyDeniedReason(piOwner), /2 CFR 200\.415/);
+  assert.equal(certifyDeniedReason(finance), null);
 });
 
 test('deciding: null/undefined user is always denied', () => {

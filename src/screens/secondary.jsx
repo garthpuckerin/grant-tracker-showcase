@@ -1,9 +1,11 @@
 // AI Insights, Compliance, Reports, Documents, SF-425, Users, Settings — leaner secondary screens
 import React from 'react';
 import { DATA, buildCompliance } from '../data.js';
-import { fmt, Icon, Status, Donut, Sparkline, BarGroup } from '../atoms.jsx';
-import { useStore, useCurrentUser, dismissInsight, resolveFinding, markScanned } from '../store.js';
+import { fmt, Icon, Status, Donut, Sparkline, BarGroup, LineArea } from '../atoms.jsx';
+import { useStore, useCurrentUser, dismissInsight, resolveFinding, markScanned, certifyFiling, addFiling } from '../store.js';
+import { canCertifyReport, certifyDeniedReason, ROLE_LABEL } from '../rbac.js';
 import { DocumentDrawer, UploadDocumentForm } from '../document-drawer.jsx';
+import { InviteMemberForm, NewFilingForm } from '../admin-forms.jsx';
 import { getTheme, setTheme, THEMES } from '../theme.js';
 import { useVizColor, insightColor } from '../viz-color.js';
 import { getDensity, setDensity } from '../density.js';
@@ -267,8 +269,72 @@ const ReportThumb = ({ kind }) => {
   return <div style={{ height: 80 }}><Sparkline data={monthly} height={80} /></div>;
 };
 
+// Full report viewer — the real chart at size, its data table, and a genuine
+// CSV export. All series derive from the same fixtures the dashboard reads.
+const reportData = (kind) => {
+  if (kind === 'PIE') {
+    const total = DATA.agencyBreakdown.reduce((s, a) => s + a.budget, 0) || 1;
+    return { columns: ['Agency', 'Awards', 'Total awarded', 'Share'], rows: DATA.agencyBreakdown.map((a) => [a.agency, a.count, fmt.money(a.budget), Math.round((a.budget / total) * 100) + '%']) };
+  }
+  if (kind === 'RADAR') {
+    return { columns: ['Principal Investigator', 'Active awards', 'Total awarded'], rows: DATA.users.filter((u) => u.role === 'PI').map((u) => { const led = DATA.grants.filter((g) => g.pi.id === u.id && g.status === 'ACTIVE'); return [u.name, led.length, fmt.money(led.reduce((s, g) => s + g.budget, 0))]; }) };
+  }
+  return { columns: ['Month', 'Expenditure'], rows: DATA.monthly.map((m) => [`${m.m} ${m.yy}`, fmt.money(m.v)]) };
+};
+
+const ReportViewer = ({ report, onClose }) => {
+  const toast = useToast();
+  if (!report) return null;
+  const data = reportData(report.kind);
+  const exportCsv = () => {
+    const q = (c) => `"${String(c).replace(/"/g, '""')}"`;
+    const csv = [data.columns.map(q).join(','), ...data.rows.map((r) => r.map(q).join(','))].join('\r\n');
+    const url = URL.createObjectURL(new Blob([csv], { type: 'text/csv;charset=utf-8' }));
+    const a = document.createElement('a'); a.href = url; a.download = report.title.toLowerCase().replace(/[^a-z0-9]+/g, '-') + '.csv';
+    document.body.appendChild(a); a.click(); a.remove(); URL.revokeObjectURL(url);
+    toast(`“${report.title}” exported (CSV).`);
+  };
+  return (
+    <Drawer open={!!report} onClose={onClose} title={report.title} subtitle={`${report.kind} · last run ${report.last}`}>
+      <div className="flex-col gap-24">
+        <p className="muted" style={{ fontSize: 13.5, margin: 0 }}>{report.desc}</p>
+        <div>
+          {report.kind === 'PIE' ? (
+            <div className="flex-col gap-12">
+              {DATA.agencyBreakdown.slice(0, 8).map((a) => { const total = DATA.agencyBreakdown.reduce((s, x) => s + x.budget, 0) || 1; const pct = a.budget / total; return (
+                <div key={a.agency}>
+                  <div style={{ display: 'flex', justifyContent: 'space-between', fontSize: 12.5, marginBottom: 4 }}><span className="mono">{a.agency}</span><span className="num">{fmt.money(a.budget, { compact: true })} · {Math.round(pct * 100)}%</span></div>
+                  <div className="track"><div className="fill" style={{ width: pct * 100 + '%' }}></div></div>
+                </div>
+              ); })}
+            </div>
+          ) : report.kind === 'RADAR' ? (
+            <BarGroup data={data.rows.map((r) => ({ m: r[0].split(' ').pop(), v: r[1] }))} height={160} />
+          ) : report.kind === 'LINE' ? (
+            <LineArea data={DATA.monthly} height={200} />
+          ) : (
+            <BarGroup data={DATA.monthly} height={160} />
+          )}
+        </div>
+        <div>
+          <div className="drawer-section-label">Data</div>
+          <div className="table-scroll"><table className="ledger">
+            <thead><tr>{data.columns.map((c, i) => <th key={c} className={i > 0 ? 'r' : ''}>{c}</th>)}</tr></thead>
+            <tbody>{data.rows.map((r, i) => <tr key={i}>{r.map((c, j) => <td key={j} className={j > 0 ? 'num r' : 'mono'} style={{ fontSize: 12 }}>{c}</td>)}</tr>)}</tbody>
+          </table></div>
+        </div>
+        <div style={{ display: 'flex', gap: 8 }}>
+          <button className="btn accent" onClick={exportCsv}><Icon name="download" size={12} /> Export CSV</button>
+          <MockButton className="btn ghost" icon="settings" label="Schedule" message="Scheduled delivery is configured in the production build." />
+        </div>
+      </div>
+    </Drawer>
+  );
+};
+
 export const Reports = () => {
   const toast = useToast();
+  const [openReport, setOpenReport] = React.useState(null);
   const reports = [
     { title: 'Portfolio Burn Rate', desc: 'Monthly expenditure across all active grants', kind: 'LINE', last: shiftIso('2026-05-15') },
     { title: 'Sponsor Concentration', desc: 'Award distribution by federal agency', kind: 'PIE', last: shiftIso('2026-05-10') },
@@ -279,9 +345,10 @@ export const Reports = () => {
   ];
   return (
   <div>
+    <ReportViewer report={openReport} onClose={() => setOpenReport(null)} />
     <div className="page-head">
       <div>
-        <div className="eyebrow">Reporting · 12 saved · 4 scheduled</div>
+        <div className="eyebrow">Reporting · {reports.length} saved · 4 scheduled</div>
         <h1>Reports.</h1>
         <p className="sub">Custom report builder, scheduled exports, and federal-form generators (SF-425, SF-270). Five chart primitives compose into any view.</p>
       </div>
@@ -298,7 +365,7 @@ export const Reports = () => {
           type="button"
           className="card report-card"
           style={{ cursor: 'pointer', textAlign: 'left', font: 'inherit', color: 'inherit', width: '100%' }}
-          onClick={() => toast(`Opening “${r.title}” — the report viewer is mocked in this demo.`, 'indigo', 'Demo')}
+          onClick={() => setOpenReport(r)}
         >
           <div className="card-body" style={{ padding: 20 }}>
             <div style={{ display: 'flex', justifyContent: 'space-between', marginBottom: 14 }}>
@@ -416,19 +483,15 @@ export const Documents = ({ navigate }) => {
   );
 };
 
-// The filings shown on the index — a module constant so the index and the
-// detail screen agree on period/type/status for a given grant.
-const SF425_FILINGS = [
-  { gi: 0, period: 'FY25 ANNUAL', type: 'Annual',    status: 'IN_PROGRESS', dueIso: '2026-06-15' },
-  { gi: 1, period: 'FY25 Q4',     type: 'Quarterly', status: 'OPEN',        dueIso: '2026-05-30' },
-  { gi: 3, period: 'FY25 FINAL',  type: 'Final',     status: 'IN_PROGRESS', dueIso: '2026-06-12' },
-  { gi: 2, period: 'FY24 ANNUAL', type: 'Annual',    status: 'COMPLETE',    dueIso: '2026-03-01' },
-  { gi: 5, period: 'FY25 FINAL',  type: 'Final',     status: 'OPEN',        dueIso: '2026-09-30' },
-];
-
 export const SF425 = ({ navigate }) => {
   const D = DATA;
-  const rows = SF425_FILINGS.map((f) => ({ ...f, g: D.grants[f.gi], due: shiftIso(f.dueIso) }));
+  const toast = useToast();
+  // The filings register lives in the store: New filing adds to it and
+  // Certify & submit (on the detail) completes a row here.
+  const filings = useStore((s) => s.filings);
+  const [showNew, setShowNew] = React.useState(false);
+  const rows = filings.map((f) => ({ ...f, g: D.grants[f.gi] || D.grants[0] }));
+  const open = (f) => navigate && navigate({ name: 'sf425detail', filingId: f.id, gi: f.gi, period: f.period, type: f.type, status: f.status, due: f.due });
   return (
     <div>
       <div className="page-head">
@@ -438,10 +501,11 @@ export const SF425 = ({ navigate }) => {
           <p className="sub">Federal financial report packages — generated, validated against 2 CFR 200, and exported in OMB-conformant format. Open a filing to review the line-by-line report; every figure cross-foots to the grant’s budget and expenses.</p>
         </div>
         <div className="ph-actions">
-          <MockButton className="btn ghost" icon="download" label="Bundle export" />
-          <MockButton className="btn accent" icon="plus" label="New filing" />
+          <MockButton className="btn ghost" icon="download" label="Bundle export" message="Bundle export (all filings as OMB PDFs) is produced by the production build." />
+          <button className="btn accent" onClick={() => setShowNew(true)}><Icon name="plus" size={12} /> New filing</button>
         </div>
       </div>
+      {showNew && <NewFilingForm onClose={() => setShowNew(false)} onCreated={(m) => toast(m)} />}
       <div className="card">
         <div className="table-scroll"><table className="ledger">
           <thead>
@@ -460,7 +524,7 @@ export const SF425 = ({ navigate }) => {
                 tied to each grant's `spent` so the SF-425 figure agrees with
                 the grant's Expended total rather than floating free. */}
             {rows.map((f, i) => (
-              <tr key={i} className="row-h" style={{ cursor: 'pointer' }} onClick={() => navigate && navigate({ name: 'sf425detail', gi: f.gi, period: f.period, type: f.type, status: f.status, due: f.due })}>
+              <tr key={f.id} className="row-h" style={{ cursor: 'pointer' }} onClick={() => open(f)}>
                 <td className="ttl">
                   {f.g.title}
                   <span className="gn">{f.g.number}</span>
@@ -470,7 +534,7 @@ export const SF425 = ({ navigate }) => {
                 <td><Status s={f.status} /></td>
                 <td className="mono" style={{ fontSize: 12, color: fmt.daysUntil(f.due) < 14 && f.status !== 'COMPLETE' ? 'var(--alert)' : 'var(--ink-3)' }}>{f.due}</td>
                 <td className="num r">{fmt.money(f.g.spent)}</td>
-                <td><button className="btn-link" onClick={(e) => { e.stopPropagation(); navigate && navigate({ name: 'sf425detail', gi: f.gi, period: f.period, type: f.type, status: f.status, due: f.due }); }}>Open →</button></td>
+                <td><button className="btn-link" onClick={(e) => { e.stopPropagation(); open(f); }}>{f.status === 'COMPLETE' ? 'View →' : 'Open →'}</button></td>
               </tr>
             ))}
           </tbody>
@@ -533,8 +597,30 @@ const SfRow = ({ line, label, value, strong, derived }) => (
 
 export const SF425Detail = ({ navigate, route }) => {
   const D = DATA;
+  const toast = useToast();
+  const user = useCurrentUser();
+  const filings = useStore((s) => s.filings);
   const grant = D.grants[route.gi] || D.grants[0];
   const r = buildSF425(grant);
+  // The live filing record (status, certification) — found by id, else by
+  // award + period (the grant masthead deep-links without an id).
+  const filing = filings.find((f) => f.id === route.filingId) || filings.find((f) => f.gi === route.gi && f.period === route.period) || null;
+  const status = filing ? filing.status : route.status;
+  const certified = status === 'COMPLETE';
+  const canCertify = canCertifyReport(user);
+  const certifyBlocked = certifyDeniedReason(user);
+
+  // Certify & submit — the state machine's terminal transition. Preconditions:
+  // the report cross-foots (allOk, below) and the acting user is an authorized
+  // official. A filing with no record yet (masthead deep-link) is opened and
+  // certified in one step.
+  const certify = () => {
+    if (!canCertify) { toast(certifyBlocked, 'alert', 'Permission required'); return; }
+    let id = filing?.id;
+    if (!id) { id = 'sf-' + Date.now(); addFiling({ id, gi: route.gi, period: route.period, type: route.type, status: 'IN_PROGRESS', due: route.due }); }
+    certifyFiling(id, user.id);
+    toast(`SF-425 ${route.period} certified and submitted for ${grant.number}.`);
+  };
 
   // Live cross-foot checks — each must hold or the filing cannot be certified.
   const checks = [
@@ -561,8 +647,20 @@ export const SF425Detail = ({ navigate, route }) => {
           <p className="sub">Federal Financial Report for {grant.title}. Recipient: State University Research Office · SAM.gov UEI on file. Every dollar figure is derived from this award’s budget and expenditures.</p>
         </div>
         <div className="ph-actions">
-          <MockButton className="btn ghost" icon="download" label="Export OMB PDF" />
-          <MockButton className="btn accent" icon="check" label="Certify & submit" message="Certification & submission to the sponsor portal is mocked in this demo." />
+          <MockButton className="btn ghost" icon="download" label="Export OMB PDF" message="The OMB-conformant PDF is rendered by the production build." />
+          {certified ? (
+            <span className="status closed" style={{ height: 32, display: 'inline-flex', alignItems: 'center' }}><span className="dot"></span>Certified{filing?.certifiedBy ? ` · ${D.users.find((u) => u.id === filing.certifiedBy)?.name || ''}` : ''}{filing?.certifiedAt ? ` · ${filing.certifiedAt}` : ''}</span>
+          ) : (
+            <button
+              className="btn accent"
+              onClick={certify}
+              disabled={!allOk}
+              title={!allOk ? 'Blocked — the report does not cross-foot' : canCertify ? 'Certify and submit to the sponsor' : certifyBlocked}
+              style={!canCertify ? { opacity: 0.55 } : undefined}
+            >
+              <Icon name="check" size={12} /> {canCertify ? 'Certify & submit' : 'Certify & submit 🔒'}
+            </button>
+          )}
         </div>
       </div>
 
@@ -640,6 +738,12 @@ export const SF425Detail = ({ navigate, route }) => {
                     : 'One or more lines fail to reconcile. Certification is blocked until the figures tie out.'}
                 </div>
               </div>
+              {!certified && !canCertify && (
+                <div className="flag alert" style={{ marginTop: 10 }}>
+                  <div className="lbl">🔒 Permission required</div>
+                  <div style={{ fontSize: 12.5, lineHeight: 1.5 }}>{certifyBlocked} Acting as {ROLE_LABEL[user.role]}.</div>
+                </div>
+              )}
             </div>
           </div>
 
@@ -652,7 +756,7 @@ export const SF425Detail = ({ navigate, route }) => {
                 <div><dt>Report type</dt><dd>{route.type}</dd></div>
                 <div><dt>Basis of accounting</dt><dd>Accrual</dd></div>
                 <div><dt>Due</dt><dd className="mono">{route.due}</dd></div>
-                <div><dt>Status</dt><dd><Status s={route.status} /></dd></div>
+                <div><dt>Status</dt><dd><Status s={status} /></dd></div>
               </dl>
             </div>
           </div>
@@ -680,7 +784,10 @@ const memberEffort = (user, grants) => {
 const MEMBER_ROLES = ['ALL', 'ADMIN', 'PI', 'FINANCE'];
 
 export const Members = () => {
-  const D = DATA;
+  const toast = useToast();
+  const users = useStore((s) => s.users);
+  const D = { ...DATA, users };
+  const [showInvite, setShowInvite] = React.useState(false);
   const [role, setRole] = React.useState('ALL');
   const [query, setQuery] = React.useState('');
   const [selected, setSelected] = React.useState(null);
@@ -705,7 +812,8 @@ export const Members = () => {
           <p className="sub">Workspace members with role-based permissions — Admin, PI, Finance, Viewer. Select a member to view their effort allocation and contact details.</p>
         </div>
         <div className="ph-actions">
-          <MockButton className="btn accent" icon="plus" label="Invite" message="Member invitations are mocked in this demo." />
+          <button className="btn accent" onClick={() => setShowInvite(true)}><Icon name="plus" size={12} /> Invite</button>
+          {showInvite && <InviteMemberForm onClose={() => setShowInvite(false)} onCreated={(m) => toast(m)} />}
         </div>
       </div>
 
@@ -759,7 +867,7 @@ export const Members = () => {
                   <td className="mono" style={{ fontSize: 12, color: 'var(--ink-3)' }}>{u.email}</td>
                   <td className="mono" style={{ fontSize: 11, letterSpacing: '0.12em' }}>{u.role}</td>
                   <td className="num r">{D.grants.filter(g => g.pi.id === u.id).length}</td>
-                  <td className="mono" style={{ fontSize: 12, color: 'var(--ink-3)' }}>2 hours ago</td>
+                  <td className="mono" style={{ fontSize: 12, color: 'var(--ink-3)' }}>{u.invited ? 'Invited · pending' : '2 hours ago'}</td>
                   <td><button className="btn-link" onClick={(e) => { e.stopPropagation(); setSelected(u); }}>View →</button></td>
                 </tr>
               ))}

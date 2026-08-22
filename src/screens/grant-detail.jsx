@@ -12,6 +12,8 @@ import {
 } from '../rbac.js';
 import { BudgetLineItemForm, ReallocationRequestForm } from '../forms.jsx';
 import { DocumentDrawer, UploadDocumentForm, downloadDocument } from '../document-drawer.jsx';
+import { TaskDrawer } from '../task-drawer.jsx';
+import { CreateTaskForm } from '../forms.jsx';
 import { useToast, MockButton } from '../toast.jsx';
 import { shiftIso, fmtMedium, daysFromToday } from '../dates.js';
 
@@ -149,7 +151,7 @@ export const GrantDetail = ({ navigate, route }) => {
       {tab === 'overview' && <OverviewTab grant={grant} years={years} lineItems={lineItems} grantTasks={grantTasks} navigate={navigate} setTab={setTab} setSelectedYear={setSelectedYear} />}
       {tab === 'budget'   && <BudgetTab   grant={grant} years={years} lineItems={lineItems} selectedYear={selectedYear} setSelectedYear={setSelectedYear} />}
       {tab === 'documents'&& <DocumentsTab docs={grantDocs} grantId={grant.id} navigate={navigate} />}
-      {tab === 'tasks'    && <TasksTab tasks={grantTasks} />}
+      {tab === 'tasks'    && <TasksTab tasks={grantTasks} grantId={grant.id} navigate={navigate} />}
       {tab === 'compliance' && <ComplianceTab grant={grant} />}
       {tab === 'history'  && <HistoryTab grant={grant} />}
     </div>
@@ -691,12 +693,27 @@ const DocumentsTab = ({ docs, grantId, navigate }) => {
   );
 };
 
-const TasksTab = ({ tasks }) => (
+const TasksTab = ({ tasks, grantId, navigate }) => {
+  const toast = useToast();
+  const [selectedId, setSelectedId] = React.useState(null);
+  const [showNew, setShowNew] = React.useState(false);
+  const selected = tasks.find((t) => t.id === selectedId) || null;
+  return (
   <div className="card">
+    <TaskDrawer task={selected} onClose={() => setSelectedId(null)} navigate={navigate} />
+    {showNew && <CreateTaskForm grantId={grantId} onClose={() => setShowNew(false)} onCreated={(m) => toast(m)} />}
     <div className="card-head">
       <div className="card-title">Tasks</div>
-      <MockButton className="btn accent" icon="plus" label="New task" message="Task creation is mocked on this grant view in the demo." />
+      <button className="btn accent" onClick={() => setShowNew(true)}><Icon name="plus" size={12} /> New task</button>
     </div>
+    {tasks.length === 0 ? (
+      <div className="empty-state" style={{ border: 0 }}>
+        <div className="kicker">Nothing scheduled</div>
+        <p className="serif">No tasks on this award</p>
+        <p className="muted">Reporting deadlines, approvals, and certifications you add here also appear in the workspace Tasks view and the dashboard.</p>
+        <button className="btn accent" onClick={() => setShowNew(true)}><Icon name="plus" size={12} /> Add the first task</button>
+      </div>
+    ) : (
     <div className="table-scroll">
     <table className="ledger">
       <thead>
@@ -710,7 +727,7 @@ const TasksTab = ({ tasks }) => (
       </thead>
       <tbody>
         {tasks.map(t => (
-          <tr key={t.id} className="row-h">
+          <tr key={t.id} className="row-h" style={{ cursor: 'pointer' }} onClick={() => setSelectedId(t.id)} title="Open task">
             <td>
               <div style={{ fontWeight: 500 }}>{t.title}</div>
               <div className="muted" style={{ fontSize: 12, marginTop: 2 }}>{t.desc}</div>
@@ -729,8 +746,10 @@ const TasksTab = ({ tasks }) => (
       </tbody>
     </table>
     </div>
+    )}
   </div>
-);
+  );
+};
 
 const ComplianceTab = ({ grant }) => {
   // This grant's SUBSET of the single compliance dataset (data.js). Two notes

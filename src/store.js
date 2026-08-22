@@ -31,6 +31,9 @@ let state = {
   documents: DATA.documents,
   findings: DATA.compliance.findings,
   lastScanAt: null,
+  // Workspace members (invitable) and the SF-425 filings register (certifiable).
+  users: DATA.users,
+  filings: DATA.filings,
 };
 
 const listeners = new Set();
@@ -97,6 +100,31 @@ export const resolveFinding = (id, resolvedBy) => {
     ...state,
     findings: state.findings.map((f) =>
       f.id === id ? { ...f, status: 'RESOLVED', resolvedBy, resolvedAt: isoFromToday(0) } : f,
+    ),
+  };
+  emit();
+};
+
+// Invite a workspace member immutably.
+export const addMember = (user) => {
+  state = { ...state, users: [...state.users, user] };
+  emit();
+};
+
+// Open a new SF-425 filing (status OPEN) immutably.
+export const addFiling = (filing) => {
+  state = { ...state, filings: [filing, ...state.filings] };
+  emit();
+};
+
+// Certify + submit a filing: the state machine's terminal transition. The
+// caller (SF-425 detail) enforces the two preconditions — the report must
+// cross-foot, and the acting user must be an authorized official (rbac.js).
+export const certifyFiling = (id, certifiedBy) => {
+  state = {
+    ...state,
+    filings: state.filings.map((f) =>
+      f.id === id ? { ...f, status: 'COMPLETE', certifiedBy, certifiedAt: isoFromToday(0) } : f,
     ),
   };
   emit();

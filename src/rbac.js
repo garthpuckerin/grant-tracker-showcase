@@ -38,6 +38,20 @@ export function canDecideReallocation(user, realloc) {
   return user.role === ROLES.ADMIN || user.role === ROLES.FINANCE;
 }
 
+// Who may CERTIFY and submit an SF-425? Under 2 CFR 200.415 the recipient's
+// authorized official certifies the report — Finance / Sponsored Programs or
+// an administrator, never the PI.
+export function canCertifyReport(user) {
+  if (!user) return false;
+  return user.role === ROLES.ADMIN || user.role === ROLES.FINANCE;
+}
+
+export function certifyDeniedReason(user) {
+  if (canCertifyReport(user)) return null;
+  if (!user) return 'Sign in to certify this report.';
+  return 'SF-425 certification requires an authorized official (Finance / Sponsored Programs) under 2 CFR 200.415. You are signed in as a Principal Investigator.';
+}
+
 // Why is a request action blocked for this user? Returns a short governance-aware
 // reason for the permission-denied panel, or null when the action is allowed.
 export function requestDeniedReason(user, grant) {

@@ -345,6 +345,31 @@ export const documentRules = {
   },
 };
 
+// Invite member — name, email, role.
+export const MEMBER_ROLE = ['ADMIN', 'PI', 'FINANCE', 'VIEWER'];
+export const memberRules = {
+  fields: {
+    name: { required: true, requiredMessage: 'Name is required.', minLength: 3, minLengthMessage: 'Name must be at least 3 characters.', maxLength: 80, maxLengthMessage: 'Name must be under 80 characters.' },
+    email: {
+      required: true,
+      requiredMessage: 'Email is required.',
+      pattern: { re: /^[^\s@]+@[^\s@]+\.[^\s@]+$/, message: 'Enter a valid email address.' },
+    },
+    role: { required: true, oneOf: { values: MEMBER_ROLE, message: 'Invalid role.' } },
+  },
+};
+
+// New SF-425 filing — award, reporting period, type, due date.
+export const FILING_TYPE = ['Quarterly', 'Annual', 'Final'];
+export const filingRules = {
+  fields: {
+    grantId: { required: true, requiredMessage: 'Select the award being reported.' },
+    period: { required: true, requiredMessage: 'Reporting period is required.', minLength: 4, minLengthMessage: 'Period must be at least 4 characters.', maxLength: 24, maxLengthMessage: 'Period must be under 24 characters.' },
+    type: { required: true, oneOf: { values: FILING_TYPE, message: 'Invalid report type.' } },
+    due: { required: true, requiredMessage: 'A due date is required.', dateRange: { min: '2020-01-01', max: '2035-12-31' } },
+  },
+};
+
 export const budgetRules = {
   fields: {
     category: {
