@@ -328,6 +328,23 @@ export function makeReallocationRules(balances) {
   };
 }
 
+// Document upload — name, type, and the award it belongs to.
+export const DOCUMENT_TYPE = ['AWARD', 'BUDGET', 'NARRATIVE', 'AGREEMENT', 'COMPLIANCE', 'REPORT', 'OTHER'];
+export const documentRules = {
+  fields: {
+    name: {
+      required: true,
+      requiredMessage: 'A document name is required.',
+      minLength: 3,
+      minLengthMessage: 'Name must be at least 3 characters.',
+      maxLength: 120,
+      maxLengthMessage: 'Name must be under 120 characters.',
+    },
+    type: { required: true, oneOf: { values: DOCUMENT_TYPE, message: 'Invalid document type.' } },
+    grantId: { required: true, requiredMessage: 'Select the award this document belongs to.' },
+  },
+};
+
 export const budgetRules = {
   fields: {
     category: {

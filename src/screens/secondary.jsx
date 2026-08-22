@@ -1,7 +1,9 @@
 // AI Insights, Compliance, Reports, Documents, SF-425, Users, Settings — leaner secondary screens
 import React from 'react';
-import { DATA } from '../data.js';
+import { DATA, buildCompliance } from '../data.js';
 import { fmt, Icon, Status, Donut, Sparkline, BarGroup } from '../atoms.jsx';
+import { useStore, useCurrentUser, dismissInsight, resolveFinding, markScanned } from '../store.js';
+import { DocumentDrawer, UploadDocumentForm } from '../document-drawer.jsx';
 import { getTheme, setTheme, THEMES } from '../theme.js';
 import { useVizColor, insightColor } from '../viz-color.js';
 import { getDensity, setDensity } from '../density.js';
@@ -9,16 +11,20 @@ import { Drawer } from '../drawer.jsx';
 import { useToast, MockButton } from '../toast.jsx';
 import { shiftIso } from '../dates.js';
 
+// Where "Take action" lands per agent: the grant tab that owns the problem.
+const ACTION_TAB = { BUDGET: 'budget', OPTIMIZE: 'budget', COMPLIANCE: 'compliance', DEADLINE: 'tasks', WRITER: 'documents' };
+
 export const Insights = ({ navigate }) => {
   const D = DATA;
-  const extra = [
-    { id: 'i5', kind: 'alert',  agent: 'BUDGET',     title: 'DOE Energy grant Year 3 burn rate exceeds plan by 8%', body: 'Equipment line at $35K above budget pace. Recommend mid-year amendment to NSF financial officer.', severity: 'HIGH' },
-    { id: 'i6', kind: 'indigo', agent: 'WRITER',     title: 'Quantum Computing proposal — specific aims draft ready', body: 'Auto-generated draft of Specific Aims 1–3 synthesized from related literature and prior aims. Pending PI revision.', severity: 'LOW' },
-    { id: 'i7', kind: 'accent', agent: 'DEADLINE',   title: 'NIST Manufacturing — annual report due in 18 days', body: 'Programmatic and budget sections from prior year flagged for reuse. Estimated 4 hours to complete.', severity: 'MEDIUM' },
-    { id: 'i8', kind: 'fund',   agent: 'OPTIMIZE',   title: 'Subaward consolidation opportunity', body: 'Three active grants share State A&M subrecipient. Consolidating invoicing would reduce admin overhead 14 hrs/quarter.', severity: 'LOW' },
-    { id: 'i9', kind: 'indigo', agent: 'COMPLIANCE', title: 'NIH Public Access Policy — 1 publication non-compliant', body: 'Manuscript published in Cybersecurity Research Letters not deposited to PMC. 90-day window closes Jul 8.', severity: 'MEDIUM' },
-  ];
-  const all = [...D.insights, ...extra];
+  const toast = useToast();
+  // Live insights from the store — dismiss removes an insight here, in the
+  // topbar bell, the dashboard widget, and the sidebar count at once.
+  const all = useStore((s) => s.insights);
+  const dismiss = (i) => { dismissInsight(i.id); toast('Insight dismissed.'); };
+  const takeAction = (i, grant) => {
+    if (grant) navigate({ name: 'grant', id: grant.id, grant, tab: ACTION_TAB[i.agent] || 'overview' });
+    else navigate({ name: i.agent === 'WRITER' ? 'documents' : 'reports' });
+  };
 
   // Agent strip colors come from the shared agent→color map so the dashboard
   // widget, this screen, and the topbar notifications all agree.
@@ -58,6 +64,13 @@ export const Insights = ({ navigate }) => {
       </div>
 
       {/* All insights */}
+      {all.length === 0 && (
+        <div className="empty-state">
+          <div className="kicker">All clear</div>
+          <p className="serif">No open insights</p>
+          <p className="muted">Every finding has been dismissed or actioned. The agents keep analyzing the portfolio and will surface new ones here.</p>
+        </div>
+      )}
       <div className="flex-col gap-12">
         {all.map(i => {
           const grant = D.grants.find(g => g.id === i.grantId);
@@ -90,8 +103,8 @@ export const Insights = ({ navigate }) => {
                 )}
               </div>
               <div className="insight-actions" style={{ display: 'flex', flexDirection: 'column', gap: 6 }}>
-                <MockButton className="btn ghost" style={{ height: 28, fontSize: 11 }} label="Dismiss" message="Dismissing insights is mocked in this demo." />
-                <MockButton className="btn" style={{ height: 28, fontSize: 11 }} label="Take action" message="Insight actions are mocked in this demo." />
+                <button className="btn ghost" style={{ height: 28, fontSize: 11 }} onClick={() => dismiss(i)}>Dismiss</button>
+                <button className="btn" style={{ height: 28, fontSize: 11 }} onClick={() => takeAction(i, grant)}>Take action</button>
               </div>
             </div>
           );
@@ -102,27 +115,55 @@ export const Insights = ({ navigate }) => {
 };
 
 export const Compliance = () => {
-  const D = DATA;
-  const { frameworks, portfolio } = D.compliance;
-  // Open findings (below) span these grants — derive the "N across M grants"
-  // kicker from the list itself so it can't drift from the rows shown.
-  const openFindings = [
-    { rule: '2 CFR 200.430', grant: 'NSF-EDU-2024-001', title: 'Time & effort certification overdue', sev: 'HIGH',   note: '2 PI certifications for FY25 H1 not submitted. Due before audit window opens.' },
-    { rule: 'SAM.gov',       grant: 'NSF-EDU-2024-001', title: 'SAM.gov renewal due in 28 days',      sev: 'MEDIUM', note: 'Required for award draw-down continuity. Renewal portal access: pi@university.edu.' },
-    { rule: 'Institutional', grant: 'DOE-ENERGY-2023-042', title: 'Cost-share quarterly report missing', sev: 'MEDIUM', note: 'University contribution documentation overdue Q4 FY25.' },
-  ];
+  const toast = useToast();
+  const user = useCurrentUser();
+  // Findings are the source of truth; every score below is derived from them
+  // (data.js buildCompliance), so resolving one moves the table, the donut,
+  // the dashboard posture, and the grant's rule slice together.
+  const findings = useStore((s) => s.findings);
+  const lastScanAt = useStore((s) => s.lastScanAt);
+  const { frameworks, portfolio } = React.useMemo(() => buildCompliance(findings), [findings]);
+  const openFindings = findings.filter((f) => f.status === 'OPEN');
+  const resolvedCount = findings.length - openFindings.length;
   const findingGrantCount = new Set(openFindings.map(f => f.grant)).size;
+
+  const resolve = (f) => {
+    resolveFinding(f.id, user.id);
+    toast(`Finding resolved — ${f.rule} on ${f.grant}. Scores re-derived.`);
+  };
+  const runScan = () => {
+    markScanned();
+    toast(`Scan complete — ${portfolio.totalRules} rules evaluated, ${openFindings.length} open finding${openFindings.length === 1 ? '' : 's'}.`);
+  };
+  // Real action on mock data: a genuine CSV of the framework table + findings.
+  const exportAudit = () => {
+    const q = (c) => `"${String(c).replace(/"/g, '""')}"`;
+    const lines = [
+      ['Framework', 'Source', 'Rules', 'Passing', 'Findings', 'Score'].map(q).join(','),
+      ...frameworks.map((r) => [r.fw, r.src, r.rules, r.pass, r.find, r.score].map(q).join(',')),
+      '',
+      ['Finding', 'Rule', 'Framework', 'Grant', 'Severity', 'Status', 'Note'].map(q).join(','),
+      ...findings.map((f) => [f.title, f.rule, f.fw, f.grant, f.sev, f.status, f.note].map(q).join(',')),
+    ];
+    const url = URL.createObjectURL(new Blob([lines.join('\r\n')], { type: 'text/csv;charset=utf-8' }));
+    const a = document.createElement('a');
+    a.href = url; a.download = 'compliance-audit.csv';
+    document.body.appendChild(a); a.click(); a.remove();
+    URL.revokeObjectURL(url);
+    toast('Compliance audit exported (CSV).');
+  };
+
   return (
     <div>
       <div className="page-head">
         <div>
-          <div className="eyebrow">Portfolio compliance · {portfolio.totalRules} rules across 2 CFR 200, NIH, NSF</div>
+          <div className="eyebrow">Portfolio compliance · {portfolio.totalRules} rules across 2 CFR 200, NIH, NSF · {lastScanAt ? 'scanned just now' : 'continuous monitoring'}</div>
           <h1>Compliance.</h1>
           <p className="sub">Sponsor-aware rule engine continuously evaluates every active grant against federal, agency, and institutional policy. Findings surface here and on individual grant pages.</p>
         </div>
         <div className="ph-actions">
-          <MockButton className="btn ghost" icon="download" label="Export audit" />
-          <MockButton className="btn" icon="play" label="Run scan" message="The compliance scan is mocked in this demo — it runs the rule engine in the production build." />
+          <button className="btn ghost" onClick={exportAudit}><Icon name="download" size={12} /> Export audit</button>
+          <button className="btn" onClick={runScan}><Icon name="play" size={12} /> Run scan</button>
         </div>
       </div>
 
@@ -168,11 +209,21 @@ export const Compliance = () => {
       <div className="card">
         <div className="card-head">
           <div className="card-title">Open Findings</div>
-          <span className="kicker">{openFindings.length} across {findingGrantCount} grants</span>
+          <span className="kicker">
+            {openFindings.length} across {findingGrantCount} grant{findingGrantCount === 1 ? '' : 's'}
+            {resolvedCount > 0 && ` · ${resolvedCount} resolved this session`}
+          </span>
         </div>
+        {openFindings.length === 0 ? (
+          <div className="empty-state" style={{ border: 0 }}>
+            <div className="kicker">Audit-ready</div>
+            <p className="serif">No open findings</p>
+            <p className="muted">Every rule across {frameworks.length} frameworks is passing. Run a scan any time to re-evaluate the portfolio.</p>
+          </div>
+        ) : (
         <div className="list">
-          {openFindings.map((f, i) => (
-            <div key={i} className="row" style={{ alignItems: 'flex-start', padding: '16px 20px' }}>
+          {openFindings.map((f) => (
+            <div key={f.id} className="row" style={{ alignItems: 'flex-start', padding: '16px 20px' }}>
               <span style={{ width: 6, height: 6, marginTop: 6, borderRadius: '50%', background: f.sev === 'HIGH' ? 'var(--alert)' : 'var(--accent)' }}></span>
               <div style={{ flex: 1 }}>
                 <div className="kicker" style={{ marginBottom: 4 }}>{f.rule} · {f.grant}</div>
@@ -180,10 +231,11 @@ export const Compliance = () => {
                 <div className="muted" style={{ fontSize: 12.5 }}>{f.note}</div>
               </div>
               <span className="mono" style={{ fontSize: 10, color: f.sev === 'HIGH' ? 'var(--alert)' : 'var(--ink-3)', letterSpacing: '0.14em' }}>{f.sev}</span>
-              <MockButton className="btn ghost" style={{ height: 26 }} label="Resolve" message="Resolving findings is mocked in this demo." />
+              <button className="btn ghost" style={{ height: 26 }} onClick={() => resolve(f)}>Resolve</button>
             </div>
           ))}
         </div>
+        )}
       </div>
     </div>
   );
@@ -300,10 +352,17 @@ export const Reports = () => {
   );
 };
 
-export const Documents = () => {
-  const D = DATA;
+export const Documents = ({ navigate }) => {
+  const toast = useToast();
+  const docs = useStore((s) => s.documents);
+  const D = { ...DATA, documents: docs };
+  const [selectedId, setSelectedId] = React.useState(null);
+  const [showUpload, setShowUpload] = React.useState(false);
+  const selected = docs.find((d) => d.id === selectedId) || null;
   return (
     <div>
+      <DocumentDrawer doc={selected} onClose={() => setSelectedId(null)} navigate={navigate} />
+      {showUpload && <UploadDocumentForm onClose={() => setShowUpload(false)} onCreated={(m) => toast(m)} />}
       <div className="page-head">
         <div>
           <div className="eyebrow">Workspace · all grants</div>
@@ -311,7 +370,7 @@ export const Documents = () => {
           <p className="sub">Award notices, budget justifications, narratives, agreements, and reports — searchable, typed, AI-tagged.</p>
         </div>
         <div className="ph-actions">
-          <MockButton className="btn accent" icon="plus" label="Upload" message="Document upload is mocked in this demo." />
+          <button className="btn accent" onClick={() => setShowUpload(true)}><Icon name="plus" size={12} /> Upload</button>
         </div>
       </div>
       <div className="card">
@@ -330,7 +389,7 @@ export const Documents = () => {
             {D.documents.map(d => {
               const g = D.grants.find(gg => gg.id === d.grantId);
               return (
-                <tr className="row-h" key={d.id}>
+                <tr className="row-h" key={d.id} style={{ cursor: 'pointer' }} onClick={() => setSelectedId(d.id)} title="Open document">
                   <td>
                     <div style={{ display: 'flex', alignItems: 'center', gap: 10 }}>
                       <Icon name="file" size={14} />

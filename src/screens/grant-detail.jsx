@@ -1,6 +1,6 @@
 // Grant detail page — anchored on grant id '1' which has full data
 import React from 'react';
-import { DATA } from '../data.js';
+import { DATA, buildCompliance } from '../data.js';
 import { fmt, Icon, Status, Donut, Utilization } from '../atoms.jsx';
 import { useStore, useCurrentUser, computeCategoryDeltas, decideReallocation } from '../store.js';
 import {
@@ -11,6 +11,7 @@ import {
   ROLE_LABEL,
 } from '../rbac.js';
 import { BudgetLineItemForm, ReallocationRequestForm } from '../forms.jsx';
+import { DocumentDrawer, UploadDocumentForm, downloadDocument } from '../document-drawer.jsx';
 import { useToast, MockButton } from '../toast.jsx';
 import { shiftIso, fmtMedium, daysFromToday } from '../dates.js';
 
@@ -42,7 +43,9 @@ const grantSummary = (g) => GRANT_SUMMARIES[g.id]
 export const GrantDetail = ({ navigate, route }) => {
   const D = DATA;
   const grant = D.grants.find(g => g.id === route.id) || D.grants[0];
-  const [tab, setTab] = React.useState('overview');
+  // Deep links (e.g. an insight's "Take action") may name the tab to open.
+  const [tab, setTab] = React.useState(route.tab || 'overview');
+  React.useEffect(() => { if (route.tab) setTab(route.tab); }, [route.tab, route.id]);
   const [selectedYear, setSelectedYear] = React.useState(grant.year);
 
   // Line items added through the form (per-grant), merged onto the base set.
@@ -53,8 +56,10 @@ export const GrantDetail = ({ navigate, route }) => {
   // Approved-and-applied reallocations shift category budgets live; subscribe so
   // the ledger re-derives the moment Finance approves a transfer.
   const reallocations = useStore((s) => s.reallocations);
-  // Tasks from the store so completing one updates this grant's Tasks tab.
+  // Tasks and documents from the store so completions/uploads update this
+  // grant's tabs immediately.
   const liveTasks = useStore((s) => s.tasks);
+  const liveDocs = useStore((s) => s.documents);
 
   // We'll synthesize budget data if not the rich grant
   const hasFullData = grant.id === '1';
@@ -82,7 +87,7 @@ export const GrantDetail = ({ navigate, route }) => {
   }));
 
   const grantTasks = liveTasks.filter(t => t.grantId === grant.id);
-  const grantDocs = D.documents.filter(d => d.grantId === grant.id);
+  const grantDocs = liveDocs.filter(d => d.grantId === grant.id);
 
   return (
     <div>
@@ -143,7 +148,7 @@ export const GrantDetail = ({ navigate, route }) => {
 
       {tab === 'overview' && <OverviewTab grant={grant} years={years} lineItems={lineItems} grantTasks={grantTasks} navigate={navigate} setTab={setTab} setSelectedYear={setSelectedYear} />}
       {tab === 'budget'   && <BudgetTab   grant={grant} years={years} lineItems={lineItems} selectedYear={selectedYear} setSelectedYear={setSelectedYear} />}
-      {tab === 'documents'&& <DocumentsTab docs={grantDocs} />}
+      {tab === 'documents'&& <DocumentsTab docs={grantDocs} grantId={grant.id} navigate={navigate} />}
       {tab === 'tasks'    && <TasksTab tasks={grantTasks} />}
       {tab === 'compliance' && <ComplianceTab grant={grant} />}
       {tab === 'history'  && <HistoryTab grant={grant} />}
@@ -622,12 +627,27 @@ const BudgetTab = ({ grant, years, lineItems, selectedYear, setSelectedYear }) =
   );
 };
 
-const DocumentsTab = ({ docs }) => (
+const DocumentsTab = ({ docs, grantId, navigate }) => {
+  const toast = useToast();
+  const [selectedId, setSelectedId] = React.useState(null);
+  const [showUpload, setShowUpload] = React.useState(false);
+  const selected = docs.find((d) => d.id === selectedId) || null;
+  return (
   <div className="card">
+    <DocumentDrawer doc={selected} onClose={() => setSelectedId(null)} navigate={navigate} />
+    {showUpload && <UploadDocumentForm grantId={grantId} onClose={() => setShowUpload(false)} onCreated={(m) => toast(m)} />}
     <div className="card-head">
       <div className="card-title">Documents</div>
-      <MockButton className="btn accent" icon="plus" label="Upload" message="Document upload is mocked in this demo." />
+      <button className="btn accent" onClick={() => setShowUpload(true)}><Icon name="plus" size={12} /> Upload</button>
     </div>
+    {docs.length === 0 ? (
+      <div className="empty-state" style={{ border: 0 }}>
+        <div className="kicker">Nothing filed yet</div>
+        <p className="serif">No documents on this award</p>
+        <p className="muted">Award notices, budget justifications, and reports attached here appear in the workspace Documents library too.</p>
+        <button className="btn accent" onClick={() => setShowUpload(true)}><Icon name="plus" size={12} /> Upload the first document</button>
+      </div>
+    ) : (
     <div className="table-scroll">
     <table className="ledger">
       <thead>
@@ -642,7 +662,7 @@ const DocumentsTab = ({ docs }) => (
       </thead>
       <tbody>
         {docs.map(d => (
-          <tr className="row-h" key={d.id}>
+          <tr className="row-h" key={d.id} style={{ cursor: 'pointer' }} onClick={() => setSelectedId(d.id)} title="Open document">
             <td>
               <div style={{ display: 'flex', alignItems: 'center', gap: 10 }}>
                 <Icon name="file" size={14} />
@@ -659,15 +679,17 @@ const DocumentsTab = ({ docs }) => (
             <td className="mono" style={{ fontSize: 12, color: 'var(--ink-3)' }}>{d.date}</td>
             <td className="num r muted">{d.size}</td>
             <td>
-              <MockButton className="btn-link" icon="download" aria-label="Download document" message="Document download is mocked in this demo." />
+              <button className="btn-link" aria-label="Download document" onClick={(e) => { e.stopPropagation(); downloadDocument(d); toast(`Downloaded “${d.name}”.`); }}><Icon name="download" size={12} /></button>
             </td>
           </tr>
         ))}
       </tbody>
     </table>
     </div>
+    )}
   </div>
-);
+  );
+};
 
 const TasksTab = ({ tasks }) => (
   <div className="card">
@@ -719,11 +741,28 @@ const ComplianceTab = ({ grant }) => {
     'annual-report': `Annual report submitted ${fmtMedium(new Date(shiftIso('2026-01-18') + 'T00:00:00'))}.`,
     'sam-renewal':   `Renewal due in 28 days — ${fmtMedium(daysFromToday(28))}.`,
   };
-  const baseRules = DATA.compliance.grantRules[grant.id] || [];
+  // Rules derive from the LIVE findings register, so resolving a finding on the
+  // Compliance screen flips this grant's rule to passing here too.
+  const liveFindings = useStore((s) => s.findings);
+  const baseRules = React.useMemo(() => buildCompliance(liveFindings).grantRules[grant.id] || [], [liveFindings, grant.id]);
   const rules = baseRules.map(r => ({ ...r, note: NOTE_RESOLVERS[r.note] || r.note }));
   const passing = rules.filter(r => r.pass).length;
   const findings = rules.length - passing;
   const scoreFrac = rules.length ? passing / rules.length : 1;
+  const failingNames = rules.filter((r) => !r.pass).map((r) => r.name);
+  const strengths = rules.filter((r) => r.pass).slice(0, 3).map((r) => r.name);
+
+  // Designed empty state: awards without a grant-level rule set are monitored
+  // under the portfolio frameworks only.
+  if (rules.length === 0) {
+    return (
+      <div className="empty-state">
+        <div className="kicker">Portfolio-monitored</div>
+        <p className="serif">No award-specific rule findings</p>
+        <p className="muted">This award is evaluated under the portfolio frameworks (2 CFR 200, sponsor policy, institutional). Award-level findings will appear here when the rule engine raises one.</p>
+      </div>
+    );
+  }
 
   return (
     <div className="g-split" style={{ display: 'grid', gridTemplateColumns: '1fr 1.6fr', gap: 24 }}>
@@ -736,14 +775,23 @@ const ComplianceTab = ({ grant }) => {
           <Donut pct={scoreFrac} size={180} label={`${passing} of ${rules.length} rules passing`} valueText="2 CFR 200 · NSF PAPPG" />
           <div className="divider" style={{ margin: '24px 0' }}></div>
           <div style={{ textAlign: 'left' }} className="flex-col gap-12">
-            <div className="flag alert">
-              <div className="lbl">{findings} finding{findings !== 1 ? 's' : ''} · Address before audit window</div>
-              <div style={{ fontSize: 12.5, lineHeight: 1.5 }}>Time & effort certification and SAM.gov renewal are blocking issues for federal audit readiness.</div>
-            </div>
-            <div className="flag fund">
-              <div className="lbl">Strengths</div>
-              <div style={{ fontSize: 12.5, lineHeight: 1.5 }}>F&A application, subrecipient monitoring, and procurement standards all clear.</div>
-            </div>
+            {findings > 0 ? (
+              <div className="flag alert">
+                <div className="lbl">{findings} finding{findings !== 1 ? 's' : ''} · Address before audit window</div>
+                <div style={{ fontSize: 12.5, lineHeight: 1.5 }}>{failingNames.join(' and ')} {failingNames.length === 1 ? 'is a blocking issue' : 'are blocking issues'} for federal audit readiness.</div>
+              </div>
+            ) : (
+              <div className="flag fund">
+                <div className="lbl">Audit-ready</div>
+                <div style={{ fontSize: 12.5, lineHeight: 1.5 }}>All {rules.length} award-level rules are passing.</div>
+              </div>
+            )}
+            {strengths.length > 0 && (
+              <div className="flag fund">
+                <div className="lbl">Strengths</div>
+                <div style={{ fontSize: 12.5, lineHeight: 1.5 }}>{strengths.join(', ')} all clear.</div>
+              </div>
+            )}
           </div>
         </div>
       </div>

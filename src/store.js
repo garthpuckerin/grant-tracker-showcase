@@ -25,6 +25,12 @@ let state = {
   // Acting identity — which fixture user is "signed in". Drives the RBAC gate.
   // Default u1 = Demo Administrator.
   currentUserId: 'u1',
+  // AI insights (dismissable), documents (uploadable), compliance findings
+  // (resolvable — every compliance score derives from these).
+  insights: DATA.insights,
+  documents: DATA.documents,
+  findings: DATA.compliance.findings,
+  lastScanAt: null,
 };
 
 const listeners = new Set();
@@ -67,6 +73,39 @@ export const addLineItem = (grantId, item) => {
     ...state,
     lineItems: { ...state.lineItems, [grantId]: [...existing, item] },
   };
+  emit();
+};
+
+// Remove an insight (the topbar badge, sidebar count, dashboard widget, and
+// Insights screen all subscribe, so it disappears everywhere).
+export const dismissInsight = (id) => {
+  state = { ...state, insights: state.insights.filter((i) => i.id !== id) };
+  emit();
+};
+
+// Prepend an uploaded document immutably.
+export const addDocument = (doc) => {
+  state = { ...state, documents: [doc, ...state.documents] };
+  emit();
+};
+
+// Resolve a compliance finding. Scores are derived from open findings
+// (data.js buildCompliance), so the framework table, portfolio composite,
+// dashboard posture, and the grant's rule slice all re-derive.
+export const resolveFinding = (id, resolvedBy) => {
+  state = {
+    ...state,
+    findings: state.findings.map((f) =>
+      f.id === id ? { ...f, status: 'RESOLVED', resolvedBy, resolvedAt: isoFromToday(0) } : f,
+    ),
+  };
+  emit();
+};
+
+// Record a rule-engine scan (the derivation is pure, so a "scan" is simply a
+// fresh timestamp the screens show as "scanned just now").
+export const markScanned = () => {
+  state = { ...state, lastScanAt: Date.now() };
   emit();
 };
 

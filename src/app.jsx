@@ -98,11 +98,13 @@ const App = () => {
   // completed or a grant is created, so read the store, not the static data.
   const liveTasks = useStore((s) => s.tasks);
   const liveGrants = useStore((s) => s.grants);
+  const liveDocs = useStore((s) => s.documents);
+  const liveInsights = useStore((s) => s.insights);
   const counts = {
     grants: liveGrants.length,
     openTasks: liveTasks.filter(t => t.status !== 'COMPLETE').length,
-    docs: D.documents.length,
-    insights: D.insights.length,
+    docs: liveDocs.length,
+    insights: liveInsights.length,
   };
 
   const navigate = (r) => setRoute(r);
@@ -119,7 +121,7 @@ const App = () => {
     case 'grants':     screen = <GrantsList  navigate={navigate} search={search} />; break;
     case 'grant':      screen = <GrantDetail navigate={navigate} route={route} />; break;
     case 'tasks':      screen = <Tasks       navigate={navigate} search={search} />; break;
-    case 'documents':  screen = <Documents   />; break;
+    case 'documents':  screen = <Documents   navigate={navigate} />; break;
     case 'insights':   screen = <Insights    navigate={navigate} />; break;
     case 'compliance': screen = <Compliance  />; break;
     case 'reports':    screen = <Reports     />; break;

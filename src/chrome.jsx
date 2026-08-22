@@ -4,7 +4,7 @@ import { Icon } from './atoms.jsx';
 import { getTheme, setTheme, THEMES } from './theme.js';
 import { DATA } from './data.js';
 import { insightColor } from './viz-color.js';
-import { useCurrentUser, setCurrentUser } from './store.js';
+import { useCurrentUser, setCurrentUser, useStore } from './store.js';
 import { ROLE_LABEL } from './rbac.js';
 
 // The acting-identity switcher lives in the sidebar user block. Switching among
@@ -95,7 +95,9 @@ const RoleSwitcher = ({ onSignOut }) => {
 // internally consistent (the same items appear on the Insights screen). The dot
 // color uses the SHARED insightColor() (agent-first) so the topbar, dashboard
 // widget, and Insights screen all tint each finding identically.
-const NOTIFICATIONS = DATA.insights.slice(0, 5).map((i) => ({
+// Derived from the LIVE store inside Topbar (below), so dismissing an insight
+// drops it from the bell too.
+const toNotifications = (insights) => insights.slice(0, 5).map((i) => ({
   id: i.id,
   title: i.title,
   meta: `${i.agent} · ${i.severity}`,
@@ -200,6 +202,7 @@ export const Sidebar = ({ route, navigate, counts, open = false, onClose, onSign
 export const Topbar = ({ route, navigate, search, setSearch, onToggleNav, searchRef }) => {
   // Which header popover is open ('ai' | 'notif' | 'help' | null). Only one at
   // a time; toggling the same icon closes it.
+  const NOTIFICATIONS = toNotifications(useStore((s) => s.insights));
   const [menu, setMenu] = React.useState(null);
   const [readAll, setReadAll] = React.useState(false);
   const [aiQuery, setAiQuery] = React.useState('');

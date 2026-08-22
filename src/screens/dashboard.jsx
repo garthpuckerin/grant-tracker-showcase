@@ -1,6 +1,6 @@
 // Dashboard / Overview
 import React from 'react';
-import { DATA } from '../data.js';
+import { DATA, buildCompliance } from '../data.js';
 import { fmt, Icon, Donut, Utilization, BarGroup, LineArea } from '../atoms.jsx';
 import { insightColor, utilizationColor } from '../viz-color.js';
 import { MockButton } from '../toast.jsx';
@@ -11,7 +11,9 @@ export const Dashboard = ({ navigate }) => {
   // Tasks come from the store so completing one re-derives the overdue copy,
   // the open-task KPI, and the deadline rail here.
   const liveTasks = useStore((s) => s.tasks);
-  const D = { ...DATA, tasks: liveTasks };
+  const liveInsights = useStore((s) => s.insights);
+  const liveFindings = useStore((s) => s.findings);
+  const D = { ...DATA, tasks: liveTasks, insights: liveInsights, compliance: buildCompliance(liveFindings) };
   const totalBudget = D.grants.reduce((s, g) => s + g.budget, 0);
   const totalSpent = D.grants.reduce((s, g) => s + g.spent, 0);
   const activeCount = D.grants.filter(g => g.status === 'ACTIVE').length;
@@ -157,7 +159,7 @@ export const Dashboard = ({ navigate }) => {
           </div>
           <div className="card-body" style={{ padding: 0 }}>
             <div className="list">
-              {D.insights.map(i => (
+              {D.insights.slice(0, 4).map(i => (
                 <div className="row" key={i.id} style={{ padding: '14px 18px', alignItems: 'flex-start' }}>
                   <div style={{ width: 4, alignSelf: 'stretch', background: insightColor(i), flexShrink: 0 }}></div>
                   <div style={{ flex: 1 }}>

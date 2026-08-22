@@ -1,6 +1,69 @@
 // Demo data lifted from the codebase, adapted for the prototype.
 import { shiftIso, daysFromToday, isoFromToday } from './dates.js';
 
+// ── Compliance model (module scope so the store can re-derive it) ───────────
+// Findings are the SOURCE; every score is DERIVED from them. Resolving a finding
+// therefore re-derives the framework table, the portfolio composite, the
+// dashboard posture, and the grant's rule slice — from one place.
+const FRAMEWORKS_BASE = [
+  { fw: '2 CFR 200',    src: 'OMB Uniform Guidance',                     rules: 8 },
+  { fw: 'NIH GPS',      src: 'NIH Grants Policy Statement',              rules: 5 },
+  { fw: 'NSF PAPPG',    src: 'NSF Proposal Award Policies & Procedures', rules: 4 },
+  { fw: 'NSF GC-1',     src: 'NSF General Conditions',                   rules: 3 },
+  { fw: 'Institutional',src: 'State Univ. Research Office',              rules: 2 },
+];
+
+// Per-grant rule sets keyed by grantId. `pass` is derived: a rule fails only
+// while an OPEN finding cites it for that grant. `note` may be a token the
+// grant-detail tab resolves against the live clock.
+const GRANT_RULES_BASE = {
+  '1': [
+    { id: '2 CFR 200.430', name: 'Time and effort certification',  severity: 'HIGH', note: '2 PI certifications for FY25 H1 not yet submitted.', passNote: 'All FY25 certifications on file.' },
+    { id: '2 CFR 200.414', name: 'Indirect cost rate compliance',  severity: 'LOW',  note: 'F&A applied at 47.5% MTDC matches negotiated rate.' },
+    { id: '2 CFR 200.331', name: 'Subrecipient monitoring',        severity: 'MED',  note: 'State A&M subaward in good standing.' },
+    { id: '2 CFR 200.317', name: 'Procurement standards',          severity: 'LOW',  note: 'Equipment >$5k via competitive solicitation.' },
+    { id: 'NSF PAPPG II',  name: 'Project reporting cadence',      severity: 'MED',  note: 'annual-report' },
+    { id: 'NSF PAPPG XI',  name: 'Conflict of interest disclosure',severity: 'LOW',  note: 'All key personnel current.' },
+    { id: 'SAM.gov',       name: 'Active registration',            severity: 'MED',  note: 'sam-renewal', passNote: 'SAM.gov registration active and current.' },
+    { id: '2 CFR 200.413', name: 'Direct cost allocation',         severity: 'LOW',  note: 'No anomalies detected in current period.' },
+  ],
+};
+
+// The open-findings register. `rule` ties a finding to a grant rule id (so the
+// grant tab flips), `fw` ties it to a framework row (so the table/score move).
+const INITIAL_FINDINGS = [
+  { id: 'f1', rule: '2 CFR 200.430', fw: '2 CFR 200',    grantId: '1', grant: 'NSF-EDU-2024-001',    title: 'Time & effort certification overdue', sev: 'HIGH',   note: '2 PI certifications for FY25 H1 not submitted. Due before audit window opens.', status: 'OPEN' },
+  { id: 'f2', rule: 'SAM.gov',       fw: 'NSF PAPPG',    grantId: '1', grant: 'NSF-EDU-2024-001',    title: 'SAM.gov renewal due in 28 days',      sev: 'MEDIUM', note: 'Required for award draw-down continuity. Renewal portal access: pi@university.edu.', status: 'OPEN' },
+  { id: 'f3', rule: 'Institutional', fw: 'Institutional',grantId: '2', grant: 'DOE-ENERGY-2023-042', title: 'Cost-share quarterly report missing', sev: 'MEDIUM', note: 'University contribution documentation overdue Q4 FY25.', status: 'OPEN' },
+];
+
+export function buildCompliance(findings = INITIAL_FINDINGS) {
+  const open = findings.filter((f) => f.status === 'OPEN');
+  const frameworks = FRAMEWORKS_BASE.map((f) => {
+    const fail = open.filter((x) => x.fw === f.fw).length;
+    return { ...f, fail, pass: f.rules - fail, find: fail, score: Math.round(((f.rules - fail) / f.rules) * 100) };
+  });
+  const totalRules = frameworks.reduce((s, f) => s + f.rules, 0);
+  const totalPassing = frameworks.reduce((s, f) => s + f.pass, 0);
+  const totalFindings = frameworks.reduce((s, f) => s + f.find, 0);
+  const score = Math.round((totalPassing / totalRules) * 100);
+  const grantRules = Object.fromEntries(
+    Object.entries(GRANT_RULES_BASE).map(([gid, rules]) => [
+      gid,
+      rules.map((r) => {
+        const failing = open.some((x) => x.grantId === gid && x.rule === r.id);
+        return { ...r, pass: !failing, note: failing || !r.passNote ? r.note : r.passNote };
+      }),
+    ]),
+  );
+  return {
+    frameworks,
+    grantRules,
+    findings,
+    portfolio: { totalRules, totalPassing, totalFindings, score, scoreFrac: score / 100 },
+  };
+}
+
 const DATA = (() => {
   const users = [
     { id: 'u1', name: 'Demo Administrator', email: 'demo@university.edu', role: 'ADMIN', initials: 'DA' },
@@ -136,6 +199,11 @@ const DATA = (() => {
     { id: 'i2', kind: 'accent', agent: 'DEADLINE',   title: 'NSF Q1 Progress Report due in 5 days', body: 'Programmatic narrative draft is 62% complete. Budget variance section requires PI sign-off.', grantId: '1', severity: 'MEDIUM' },
     { id: 'i3', kind: 'indigo', agent: 'COMPLIANCE', title: '2 CFR 200 §200.430 — time & effort certification overdue', body: '2 PI certifications for FY25 H1 have not been submitted. Required for federal audit readiness.', grantId: '1', severity: 'MEDIUM' },
     { id: 'i4', kind: 'fund',   agent: 'OPTIMIZE',   title: 'NIH Cyber grant trending 12% under plan', body: 'Underspend driven by delayed equipment delivery. Consider pre-purchasing FY26 supplies under §1903 carry-forward.', grantId: '3', severity: 'LOW' },
+    { id: 'i5', kind: 'alert',  agent: 'BUDGET',     title: 'DOE Energy grant Year 3 burn rate exceeds plan by 8%', body: 'Equipment line at $35K above budget pace. Recommend mid-year amendment to the DOE financial officer.', grantId: '2', severity: 'HIGH' },
+    { id: 'i6', kind: 'indigo', agent: 'WRITER',     title: 'Quantum Computing proposal — specific aims draft ready', body: 'Auto-generated draft of Specific Aims 1–3 synthesized from related literature and prior aims. Pending PI revision.', grantId: '7', severity: 'LOW' },
+    { id: 'i7', kind: 'accent', agent: 'DEADLINE',   title: 'NIST Manufacturing — annual report due in 18 days', body: 'Programmatic and budget sections from prior year flagged for reuse. Estimated 4 hours to complete.', grantId: '14', severity: 'MEDIUM' },
+    { id: 'i8', kind: 'fund',   agent: 'OPTIMIZE',   title: 'Subaward consolidation opportunity', body: 'Three active grants share State A&M subrecipient. Consolidating invoicing would reduce admin overhead 14 hrs/quarter.', grantId: null, severity: 'LOW' },
+    { id: 'i9', kind: 'indigo', agent: 'COMPLIANCE', title: 'NIH Public Access Policy — 1 publication non-compliant', body: 'Manuscript published in Cybersecurity Research Letters not deposited to PMC. 90-day window closes Jul 8.', grantId: '3', severity: 'MEDIUM' },
   ];
 
   // ── Compliance — single source of truth ──────────────────────────────────
@@ -145,55 +213,9 @@ const DATA = (() => {
   //   • Grant-detail tab     → that grant's SUBSET of rules (scoped, derived here)
   // The dashboard and Compliance screen show the PORTFOLIO composite; the
   // grant-detail tab shows a single grant's slice of the same rule universe.
-  const compliance = (() => {
-    // Per-grant rule sets keyed by grantId. Each rule: { id, name, pass, severity, note }.
-    // `note` may be a function of the date-helpers so it tracks the live clock.
-    const grantRules = {
-      '1': [
-        { id: '2 CFR 200.430', name: 'Time and effort certification',  pass: false, severity: 'HIGH', note: '2 PI certifications for FY25 H1 not yet submitted.' },
-        { id: '2 CFR 200.414', name: 'Indirect cost rate compliance',  pass: true,  severity: 'LOW',  note: 'F&A applied at 47.5% MTDC matches negotiated rate.' },
-        { id: '2 CFR 200.331', name: 'Subrecipient monitoring',        pass: true,  severity: 'MED',  note: 'State A&M subaward in good standing.' },
-        { id: '2 CFR 200.317', name: 'Procurement standards',          pass: true,  severity: 'LOW',  note: 'Equipment >$5k via competitive solicitation.' },
-        { id: 'NSF PAPPG II',  name: 'Project reporting cadence',      pass: true,  severity: 'MED',  note: 'annual-report' },
-        { id: 'NSF PAPPG XI',  name: 'Conflict of interest disclosure',pass: true,  severity: 'LOW',  note: 'All key personnel current.' },
-        { id: 'SAM.gov',       name: 'Active registration',            pass: false, severity: 'MED',  note: 'sam-renewal' },
-        { id: '2 CFR 200.413', name: 'Direct cost allocation',         pass: true,  severity: 'LOW',  note: 'No anomalies detected in current period.' },
-      ],
-    };
-
-    // Framework rows — the portfolio-wide rule universe. Per-framework counts
-    // are the source; passing/findings/score are DERIVED so a row can never lie.
-    const frameworks = [
-      { fw: '2 CFR 200',    src: 'OMB Uniform Guidance',                  rules: 8, fail: 1 },
-      { fw: 'NIH GPS',      src: 'NIH Grants Policy Statement',           rules: 5, fail: 0 },
-      { fw: 'NSF PAPPG',    src: 'NSF Proposal Award Policies & Procedures', rules: 4, fail: 1 },
-      { fw: 'NSF GC-1',     src: 'NSF General Conditions',                rules: 3, fail: 0 },
-      { fw: 'Institutional',src: 'State Univ. Research Office',           rules: 2, fail: 1 },
-    ].map(f => ({
-      ...f,
-      pass: f.rules - f.fail,
-      find: f.fail,
-      score: Math.round(((f.rules - f.fail) / f.rules) * 100),
-    }));
-
-    // Portfolio composite — reduced from the framework rows.
-    const totalRules = frameworks.reduce((s, f) => s + f.rules, 0);
-    const totalPassing = frameworks.reduce((s, f) => s + f.pass, 0);
-    const totalFindings = frameworks.reduce((s, f) => s + f.find, 0);
-    const portfolioScore = Math.round((totalPassing / totalRules) * 100);
-
-    return {
-      frameworks,
-      grantRules,
-      portfolio: {
-        totalRules,
-        totalPassing,
-        totalFindings,
-        score: portfolioScore,        // 0..100
-        scoreFrac: portfolioScore / 100,
-      },
-    };
-  })();
+  // Initial derivation from the seed findings; the store re-derives live via
+  // buildCompliance(state.findings) as findings are resolved.
+  const compliance = buildCompliance(INITIAL_FINDINGS);
 
   const agencyBreakdown = (() => {
     const m = new Map();
