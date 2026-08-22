@@ -141,14 +141,16 @@ const SidebarItem = ({ id, name, icon, count, active, onClick }) => (
     className={`sidebar-item ${active ? 'active' : ''}`}
     onClick={() => onClick(id)}
     aria-current={active ? 'page' : undefined}
+    data-label={name}
+    title={name}
   >
     <span className="si-icon"><Icon name={icon} size={14} /></span>
-    <span>{name}</span>
+    <span className="si-label">{name}</span>
     {count != null && <span className="si-count">{count}</span>}
   </button>
 );
 
-export const Sidebar = ({ route, navigate, counts, open = false, onClose, onSignOut }) => {
+export const Sidebar = ({ route, navigate, counts, open = false, onClose, onSignOut, collapsed = false, onToggleCollapse }) => {
   // On mobile, selecting a destination should also dismiss the drawer so the
   // user lands directly on the new screen.
   const go = (id) => {
@@ -173,6 +175,18 @@ export const Sidebar = ({ route, navigate, counts, open = false, onClose, onSign
   ];
   return (
     <aside className={`sidebar ${open ? 'open' : ''}`} role="navigation" aria-label="Primary">
+      {onToggleCollapse && (
+        <button
+          type="button"
+          className="sidebar-collapse"
+          onClick={onToggleCollapse}
+          aria-pressed={collapsed}
+          aria-label={collapsed ? 'Expand navigation' : 'Collapse navigation'}
+          title={collapsed ? 'Expand navigation' : 'Collapse navigation'}
+        >
+          <Icon name={collapsed ? 'arrowR' : 'arrowL'} size={12} />
+        </button>
+      )}
       <div className="sidebar-brand">
         <span className="mark">G</span>
         <span className="word">Grant Tracker</span>
@@ -205,6 +219,10 @@ export const Topbar = ({ route, navigate, search, setSearch, onToggleNav, search
   const NOTIFICATIONS = toNotifications(useStore((s) => s.insights));
   const [menu, setMenu] = React.useState(null);
   const [readAll, setReadAll] = React.useState(false);
+  // Narrow widths: the search collapses to an icon and expands to its own row
+  // on demand (instead of the bar wrapping into a permanent second row).
+  const [searchOpen, setSearchOpen] = React.useState(false);
+  const openSearch = () => { setSearchOpen(true); setTimeout(() => searchRef.current?.focus(), 0); };
   const [aiQuery, setAiQuery] = React.useState('');
   const actionsRef = React.useRef(null);
   const unread = readAll ? 0 : NOTIFICATIONS.length;
@@ -270,7 +288,7 @@ export const Topbar = ({ route, navigate, search, setSearch, onToggleNav, search
   })();
   return (
     <div className="topbar">
-      <div className="topbar-inner">
+      <div className={`topbar-inner ${searchOpen ? 'search-open' : ''}`}>
       <button
         className="tb-icon nav-toggle"
         onClick={onToggleNav}
@@ -298,8 +316,12 @@ export const Topbar = ({ route, navigate, search, setSearch, onToggleNav, search
           onKeyDown={onSearchKey}
         />
         <span className="kbd">⌘K</span>
+        <button type="button" className="tb-icon tb-search-close" aria-label="Close search" onClick={() => setSearchOpen(false)}><Icon name="close" size={12} /></button>
       </div>
       <div className="tb-actions" ref={actionsRef}>
+        <button type="button" className="tb-icon tb-search-toggle" aria-label="Search" title="Search" onClick={openSearch}>
+          <Icon name="search" size={14} />
+        </button>
         <button
           className={`tb-icon ${menu === 'ai' ? 'is-open' : ''}`}
           aria-label="AI Assistant"

@@ -501,12 +501,12 @@ const BudgetTab = ({ grant, years, lineItems, selectedYear, setSelectedYear }) =
                   <td>
                     <div className="mono" style={{ fontSize: 11, color: 'var(--ink-2)', fontWeight: 600, letterSpacing: '0.08em' }}>{l.cat}</div>
                   </td>
-                  <td className="muted" style={{ fontSize: 12.5, maxWidth: 280 }}>{l.desc}</td>
+                  <td className="muted col-desc" style={{ fontSize: 12.5 }}>{l.desc}</td>
                   <td className="num r">{fmt.money(l.budgeted)}</td>
                   <td className="num r">{fmt.money(l.spent)}</td>
                   <td className="num r muted">{fmt.money(l.encumbered)}</td>
                   <td className="num r" style={{ color: bal < 0 ? 'var(--alert)' : 'var(--ink)' }}>{fmt.money(bal)}</td>
-                  <td style={{ minWidth: 160 }}>
+                  <td className="col-util">
                     <div style={{ display: 'flex', alignItems: 'center', gap: 10 }}>
                       <Utilization spent={l.spent} encumbered={l.encumbered} total={l.budgeted} />
                       <span className="mono" style={{ fontSize: 11, color: pct > 0.9 ? 'var(--alert)' : 'var(--ink-2)', minWidth: 32 }}>{fmt.pct(pct, 0)}</span>

@@ -19,6 +19,8 @@ import { useStore } from './store.js';
 // peeker who returns — always sees the landing again. (Once-ever onboarding, if
 // added later, belongs in localStorage; the entered flag deliberately does not.)
 const ENTERED_KEY = 'gt2:entered:v1';
+// Desktop sidebar preference: expanded (default) or collapsed to the icon rail.
+const NAV_KEY = 'gt2:nav:v1';
 // Once-ever onboarding flag (localStorage): the tour runs on a visitor's first
 // entry and never re-nags on reload; sign-out clears it so the whole
 // landing → tour → app sequence can be replayed.
@@ -37,6 +39,12 @@ const App = () => {
   const D = DATA;
   const [entered, setEntered] = React.useState(readEntered);
   const [onboarded, setOnboarded] = React.useState(readOnboarded);
+  const [navCollapsed, setNavCollapsed] = React.useState(() => {
+    try { return localStorage.getItem(NAV_KEY) === 'rail'; } catch { return false; }
+  });
+  const toggleNavCollapsed = React.useCallback(() => {
+    setNavCollapsed((c) => { try { localStorage.setItem(NAV_KEY, c ? 'expanded' : 'rail'); } catch (e) {} return !c; });
+  }, []);
   const [route, setRoute] = React.useState({ name: 'dashboard' });
   const [search, setSearch] = React.useState('');
   const [navOpen, setNavOpen] = React.useState(false);
@@ -147,7 +155,7 @@ const App = () => {
   // First-run tour (domain orientation + the role choice) — once-ever.
   if (!onboarded) return <Onboarding onFinish={finishTour} />;
 
-  if (!loaded) return <WorkspaceSkeleton />;
+  if (!loaded) return <WorkspaceSkeleton collapsed={navCollapsed} />;
 
   let screen;
   switch (route.name) {
@@ -167,9 +175,9 @@ const App = () => {
   }
 
   return (
-    <div className="app">
+    <div className={`app ${navCollapsed ? 'nav-collapsed' : ''}`}>
       <a href="#main-content" className="skip-link">Skip to main content</a>
-      <Sidebar route={route} navigate={navigate} counts={counts} open={navOpen} onClose={closeNav} onSignOut={signOut} />
+      <Sidebar route={route} navigate={navigate} counts={counts} open={navOpen} onClose={closeNav} onSignOut={signOut} collapsed={navCollapsed} onToggleCollapse={toggleNavCollapsed} />
       {navOpen && <div className="nav-backdrop" onClick={closeNav} aria-hidden="true" />}
       <div className="main">
         <Topbar route={route} navigate={navigate} search={search} setSearch={setSearch} onToggleNav={() => setNavOpen(o => !o)} searchRef={searchRef} onReplayTour={replayTour} />

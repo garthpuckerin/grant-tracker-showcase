@@ -135,6 +135,7 @@ button { font-family: inherit; cursor: pointer; }
 }
 
 /* Sidebar */
+.sidebar-collapse { display: none; }
 .sidebar {
   border-right: 1px solid var(--rule);
   background: var(--paper);
@@ -308,6 +309,7 @@ button { font-family: inherit; cursor: pointer; }
   border-radius: 50%;
 }
 
+.tb-search-toggle, .tb-search-close { display: none; }
 .tb-search {
   flex: 0 1 320px;
   height: 30px;
@@ -1135,8 +1137,8 @@ button { font-family: inherit; cursor: pointer; }
 /* Backdrop overlay behind the drawer (rendered only when open) */
 .nav-backdrop { display: none; }
 
-@media (max-width: 900px) {
-  /* Collapse the two-column app shell to a single column */
+@media (max-width: 599px) {
+  /* PHONE tier: collapse the two-column app shell to a single column */
   .app {
     grid-template-columns: 1fr;
   }
@@ -1170,12 +1172,6 @@ button { font-family: inherit; cursor: pointer; }
     width: 100%;
   }
 
-  /* Reveal the hamburger trigger in the topbar */
-  .nav-toggle {
-    display: grid;
-    flex-shrink: 0;
-  }
-
   /* Tighten topbar padding/spacing at small widths */
   .topbar-inner {
     padding: 0 16px;
@@ -1198,14 +1194,135 @@ button { font-family: inherit; cursor: pointer; }
   }
 }
 
+/* ≤900 content tier — tighter gutters, two-column dense grids. */
+@media (max-width: 900px) {
+  .topbar-inner { padding: 0 16px; gap: 12px; }
+  .main-inner { padding: 24px 16px 56px 16px; }
+  .bento[style], .g-dense { grid-template-columns: repeat(2, minmax(0, 1fr)) !important; }
+  .g-split { grid-template-columns: 1fr !important; }
+}
+
 /* ============================================================
-   Narrow phones (<= 720px): the topbar wraps so the search input
+   ICON RAIL (641–1180px): the sidebar collapses to a 68px rail —
+   icons + badges, labels as tooltips — so tablets and small laptops
+   keep persistent navigation AND enough width for the ledgers.
+   ============================================================ */
+@media (min-width: 600px) and (max-width: 1023px) {
+  .app { grid-template-columns: 68px 1fr; }
+  .sidebar { width: 68px; padding-top: 14px; overflow: visible; }
+  .sidebar-brand { justify-content: center; padding: 0 0 14px; }
+  .sidebar-brand .word, .sidebar-brand .ver,
+  .sidebar-section-label,
+  .sidebar-item .si-label,
+  .sidebar-user .who { display: none; }
+  .sidebar-section { padding: 6px 10px; }
+  .sidebar-item {
+    width: 48px; height: 44px; margin: 2px auto; padding: 0;
+    justify-content: center; gap: 0;
+  }
+  .sidebar-item .si-icon { width: 16px; height: 16px; opacity: 1; }
+  .sidebar-item .si-count {
+    position: absolute; top: 5px; right: 4px; margin: 0;
+    font-size: 9px; line-height: 14px; min-width: 14px; padding: 0 3px; text-align: center;
+    border-radius: 7px; background: var(--paper-tint); color: var(--ink-2);
+  }
+  .sidebar-item.active .si-count { background: color-mix(in oklch, var(--paper) 22%, transparent); color: var(--paper); opacity: 1; }
+  /* Tooltip label on hover / keyboard focus */
+  .sidebar-item::after {
+    content: attr(data-label);
+    position: absolute; left: 58px; top: 50%; transform: translateY(-50%);
+    background: var(--ink); color: var(--paper);
+    font-size: 11.5px; font-weight: 500; letter-spacing: 0.01em; white-space: nowrap;
+    padding: 6px 10px; border-radius: 2px; z-index: 80;
+    opacity: 0; pointer-events: none; transition: opacity 0.12s;
+  }
+  .sidebar-item:hover::after, .sidebar-item:focus-visible::after { opacity: 1; }
+  .sidebar-user { flex-direction: column; align-items: center; gap: 8px; padding: 12px 0; }
+  .sidebar-user > button:first-child { flex: 0 0 auto; justify-content: center; }
+  .sidebar-user > button:first-child > svg { display: none; }
+  .sidebar-user [role="menu"] { left: 56px; right: auto; bottom: 8px; width: 240px; }
+}
+
+/* ≥1024 desktop floor: the sidebar is persistent but USER-COLLAPSIBLE to the
+   same rail (Kuali's collapsible nav, Workday's 2026 icon sidebar). The
+   preference persists. */
+@media (min-width: 1024px) {
+  .sidebar-collapse {
+    display: grid; place-items: center;
+    width: 28px; height: 28px; border-radius: 2px;
+    border: 1px solid var(--rule); background: var(--paper); color: var(--ink-3);
+    cursor: pointer; position: absolute; right: -14px; top: 18px; z-index: 61;
+  }
+  .sidebar-collapse:hover { color: var(--ink); border-color: var(--rule-strong); }
+
+  .app.nav-collapsed { grid-template-columns: 68px 1fr; }
+  .app.nav-collapsed .sidebar { width: 68px; padding-top: 14px; overflow: visible; }
+  .app.nav-collapsed .sidebar-brand { justify-content: center; padding: 0 0 14px; }
+  .app.nav-collapsed .sidebar-brand .word, .app.nav-collapsed .sidebar-brand .ver,
+  .app.nav-collapsed .sidebar-section-label,
+  .app.nav-collapsed .sidebar-item .si-label,
+  .app.nav-collapsed .sidebar-user .who { display: none; }
+  .app.nav-collapsed .sidebar-section { padding: 6px 10px; }
+  .app.nav-collapsed .sidebar-item {
+    width: 48px; height: 44px; margin: 2px auto; padding: 0;
+    justify-content: center; gap: 0;
+  }
+  .app.nav-collapsed .sidebar-item .si-icon { width: 16px; height: 16px; opacity: 1; }
+  .app.nav-collapsed .sidebar-item .si-count {
+    position: absolute; top: 5px; right: 4px; margin: 0;
+    font-size: 9px; line-height: 14px; min-width: 14px; padding: 0 3px; text-align: center;
+    border-radius: 7px; background: var(--paper-tint); color: var(--ink-2);
+  }
+  .app.nav-collapsed .sidebar-item.active .si-count { background: color-mix(in oklch, var(--paper) 22%, transparent); color: var(--paper); opacity: 1; }
+  /* Tooltip label on hover / keyboard focus */
+  .app.nav-collapsed .sidebar-item::after {
+    content: attr(data-label);
+    position: absolute; left: 58px; top: 50%; transform: translateY(-50%);
+    background: var(--ink); color: var(--paper);
+    font-size: 11.5px; font-weight: 500; letter-spacing: 0.01em; white-space: nowrap;
+    padding: 6px 10px; border-radius: 2px; z-index: 80;
+    opacity: 0; pointer-events: none; transition: opacity 0.12s;
+  }
+  .app.nav-collapsed .sidebar-item:hover::after, .app.nav-collapsed .sidebar-item:focus-visible::after { opacity: 1; }
+  .app.nav-collapsed .sidebar-user { flex-direction: column; align-items: center; gap: 8px; padding: 12px 0; }
+  .app.nav-collapsed .sidebar-user > button:first-child { flex: 0 0 auto; justify-content: center; }
+  .app.nav-collapsed .sidebar-user > button:first-child > svg { display: none; }
+  .app.nav-collapsed .sidebar-user [role="menu"] { left: 56px; right: auto; bottom: 8px; width: 240px; }
+  .app.nav-collapsed .sidebar-collapse { right: -14px; }
+}
+
+/* <1024: the search collapses to an icon and opens as its own row on demand. */
+@media (max-width: 1023px) {
+  .topbar { height: auto; min-height: 56px; }
+  .topbar-inner { flex-wrap: wrap; min-height: 56px; gap: 10px; }
+  .tb-search { display: none; }
+  .tb-search-toggle { display: grid; }
+  .topbar-inner.search-open .tb-search { display: flex; order: 3; min-width: 100%; flex-basis: 100%; margin-bottom: 8px; }
+  .topbar-inner.search-open .tb-search .kbd { display: none; }
+  .topbar-inner.search-open .tb-search-toggle { display: none; }
+  .tb-search-close { display: grid; width: 28px; height: 28px; flex-shrink: 0; }
+}
+
+/* Ledger column widths tighten below 1180 so the 8-column budget ledger fits
+   the content column at the 1024 floor instead of scrolling inside its card. */
+.col-util { min-width: 160px; }
+.col-desc { max-width: 280px; }
+@media (max-width: 1180px) {
+  .col-util { min-width: 112px; }
+  .col-desc { max-width: 180px; }
+  .main-inner { padding-left: 20px; padding-right: 20px; }
+}
+
+/* ============================================================
+   ≤780 content tier: single-column grids, stacked page header,
+   collapsible topbar search (no wrapping second row), wrapping tabs.
+   ============================================================ */ so the search input
    drops to its own full-width row beneath the crumbs + actions.
    The 900px drawer behavior above is preserved (this is additive).
    Every dense/split grid collapses to a single column.
    ============================================================ */
-@media (max-width: 720px) {
-  /* Single column for all content grids on phones. */
+@media (max-width: 767px) {
+  /* Single column for all content grids. */
   .bento[style],
   .g-dense,
   .g-split {
@@ -1216,23 +1333,19 @@ button { font-family: inherit; cursor: pointer; }
     border-right: 0;
   }
 
-  .topbar {
-    height: auto;
-    min-height: 56px;
+  /* Collapsible search: an icon in the actions cluster; tapping it opens the
+     search as its own row (on purpose), with a close control. The bar never
+     wraps on its own. */
+  .topbar { height: auto; min-height: 56px; }
+  .topbar-inner { flex-wrap: wrap; min-height: 56px; gap: 10px; }
+  .tb-search { display: none; }
+  .tb-search-toggle { display: grid; }
+  .topbar-inner.search-open .tb-search {
+    display: flex; order: 3; min-width: 100%; flex-basis: 100%; margin-bottom: 8px;
   }
-  .topbar-inner {
-    flex-wrap: wrap;
-    min-height: 56px;
-    padding-top: 8px;
-    padding-bottom: 8px;
-    gap: 10px;
-  }
-  /* Search becomes a full-width row below the crumbs/actions row. */
-  .tb-search {
-    order: 3;
-    min-width: 100%;
-    flex-basis: 100%;
-  }
+  .topbar-inner.search-open .tb-search .kbd { display: none; }
+  .topbar-inner.search-open .tb-search-toggle { display: none; }
+  .tb-search-close { display: grid; width: 28px; height: 28px; flex-shrink: 0; }
 
   /* Page header stacks on phones: the title column takes the full width and
      the action buttons wrap onto their own row beneath it. Without this the
@@ -1592,7 +1705,7 @@ select.field-input { cursor: pointer; }
 }
 .reduce-motion .toast-flag { animation: none; }
 
-@media (max-width: 720px) {
+@media (max-width: 767px) {
   .modal-backdrop { padding: 24px 12px; }
   .form-grid.cols-2,
   .form-preview-grid.cols-2 { grid-template-columns: 1fr; }
@@ -1693,7 +1806,7 @@ select.field-input { cursor: pointer; }
   min-width: 160px;
 }
 
-@media (max-width: 720px) {
+@media (max-width: 599px) {
   .drawer-panel { max-width: 100%; }
 }
 
@@ -1860,7 +1973,7 @@ select.field-input { cursor: pointer; }
   }
   .landing-hero { max-width: none; }
 }
-@media (max-width: 720px) {
+@media (max-width: 767px) {
   .landing-top { padding: 0 16px; }
   .landing-main { padding: 40px 16px 44px 16px; gap: 32px; }
   .landing-foot { padding: 14px 16px; gap: 12px; }
@@ -1968,7 +2081,7 @@ select.field-input { cursor: pointer; }
 .onb-nav { display: flex; align-items: center; justify-content: space-between; gap: 12px; margin-top: 26px; padding-top: 16px; border-top: 1px solid var(--rule); }
 .onb-count { font-size: 11px; color: var(--ink-3); letter-spacing: 0.1em; }
 
-@media (max-width: 720px) {
+@media (max-width: 767px) {
   .onb-card { padding: 20px 16px 16px; }
   .onb-title { font-size: 30px; }
   .onb-roles, .onb-figures, .onb-glossary, .onb-flows { grid-template-columns: 1fr; }
@@ -1985,8 +2098,8 @@ select.field-input { cursor: pointer; }
    ============================================================ */
 .mtab { display: none; }
 
-@media (max-width: 720px) {
-  /* Bottom tab bar — the primary nav on phones. */
+@media (max-width: 767px) {
+  /* Bottom tab bar — the primary nav on phones (hidden again above 640px, below). */
   .mtab {
     position: fixed;
     left: 0; right: 0; bottom: 0;
@@ -2062,4 +2175,13 @@ select.field-input { cursor: pointer; }
   .tabs button, .pill-group button { min-height: 44px; }
   .sidebar-item { min-height: 48px; }
   .task-check { width: 24px !important; height: 24px !important; }
+}
+/* Between 641 and 780px the icon rail is the nav — no bottom bar. */
+@media (min-width: 600px) and (max-width: 767px) {
+  .mtab { display: none !important; }
+  .main-inner { padding-bottom: 56px; }
+}
+/* Phones: breadcrumbs reduce to the current screen. */
+@media (max-width: 599px) {
+  .crumbs span:not(.cur), .crumbs .sep { display: none; }
 }

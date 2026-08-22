@@ -27,8 +27,8 @@ const SidebarShell = () => (
   </aside>
 );
 
-export const WorkspaceSkeleton = () => (
-  <div className="app">
+export const WorkspaceSkeleton = ({ collapsed = false }) => (
+  <div className={`app ${collapsed ? 'nav-collapsed' : ''}`}>
     <SidebarShell />
     <div className="main">
       <div className="topbar" aria-hidden="true">
