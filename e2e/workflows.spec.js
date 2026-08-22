@@ -14,6 +14,7 @@ const enterApp = async (page, route) => {
   await page.addInitScript((r) => {
     try {
       sessionStorage.setItem('gt2:entered:v1', 'true')
+      localStorage.setItem('gt2:onboarded:v1', 'true')
       if (r) localStorage.setItem('gt2-route', JSON.stringify(r))
     } catch (e) { /* private mode */ }
   }, route)

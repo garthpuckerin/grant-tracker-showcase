@@ -9,6 +9,7 @@ import { Tasks } from './screens/tasks.jsx';
 import { Insights, Compliance, Reports, Documents, SF425, SF425Detail, Members, Settings } from './screens/secondary.jsx';
 import { WorkspaceSkeleton } from './skeleton.jsx';
 import { Landing } from './Landing.jsx';
+import { Onboarding } from './Onboarding.jsx';
 import { useStore } from './store.js';
 
 // Marketing-landing gate key. SESSION-scoped (sessionStorage), so in-session
@@ -16,15 +17,24 @@ import { useStore } from './store.js';
 // peeker who returns — always sees the landing again. (Once-ever onboarding, if
 // added later, belongs in localStorage; the entered flag deliberately does not.)
 const ENTERED_KEY = 'gt2:entered:v1';
+// Once-ever onboarding flag (localStorage): the tour runs on a visitor's first
+// entry and never re-nags on reload; sign-out clears it so the whole
+// landing → tour → app sequence can be replayed.
+const ONBOARDED_KEY = 'gt2:onboarded:v1';
 
 const readEntered = () => {
   try { return sessionStorage.getItem(ENTERED_KEY) === 'true'; }
+  catch { return false; }
+};
+const readOnboarded = () => {
+  try { return localStorage.getItem(ONBOARDED_KEY) === 'true'; }
   catch { return false; }
 };
 
 const App = () => {
   const D = DATA;
   const [entered, setEntered] = React.useState(readEntered);
+  const [onboarded, setOnboarded] = React.useState(readOnboarded);
   const [route, setRoute] = React.useState({ name: 'dashboard' });
   const [search, setSearch] = React.useState('');
   const [navOpen, setNavOpen] = React.useState(false);
@@ -42,9 +52,24 @@ const App = () => {
 
   // Sign out — clear the gate, close the drawer, and return to the landing.
   const signOut = React.useCallback(() => {
-    try { sessionStorage.removeItem(ENTERED_KEY); } catch (e) {}
+    try { sessionStorage.removeItem(ENTERED_KEY); localStorage.removeItem(ONBOARDED_KEY); } catch (e) {}
     setNavOpen(false);
     setEntered(false);
+    setOnboarded(false);
+  }, []);
+
+  // Finish (or skip) the tour — optionally landing on a deep link ("Show me").
+  const finishTour = React.useCallback((landing) => {
+    try { localStorage.setItem(ONBOARDED_KEY, 'true'); } catch (e) {}
+    if (landing && landing.name) setRoute(landing);
+    setOnboarded(true);
+  }, []);
+
+  // Help → Replay tour: clear the once-ever flag and show the tour again.
+  const replayTour = React.useCallback(() => {
+    try { localStorage.removeItem(ONBOARDED_KEY); } catch (e) {}
+    setNavOpen(false);
+    setOnboarded(false);
   }, []);
 
   // Initial-load skeleton — first mount only (~500ms), simulating the real
@@ -113,6 +138,9 @@ const App = () => {
   // enters; the gate is bypassed on subsequent visits via the persisted flag.
   if (!entered) return <Landing onEnter={enterDemo} />;
 
+  // First-run tour (domain orientation + the role choice) — once-ever.
+  if (!onboarded) return <Onboarding onFinish={finishTour} />;
+
   if (!loaded) return <WorkspaceSkeleton />;
 
   let screen;
@@ -138,7 +166,7 @@ const App = () => {
       <Sidebar route={route} navigate={navigate} counts={counts} open={navOpen} onClose={closeNav} onSignOut={signOut} />
       {navOpen && <div className="nav-backdrop" onClick={closeNav} aria-hidden="true" />}
       <div className="main">
-        <Topbar route={route} navigate={navigate} search={search} setSearch={setSearch} onToggleNav={() => setNavOpen(o => !o)} searchRef={searchRef} />
+        <Topbar route={route} navigate={navigate} search={search} setSearch={setSearch} onToggleNav={() => setNavOpen(o => !o)} searchRef={searchRef} onReplayTour={replayTour} />
         <main className="main-inner" id="main-content" tabIndex={-1} ref={mainRef}>
           {screen}
         </main>

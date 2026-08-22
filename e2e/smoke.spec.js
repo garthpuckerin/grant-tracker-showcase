@@ -60,7 +60,10 @@ test('fixtures-only render with zero console/page/network errors', async ({ page
   // directly (the gate is bypassed for returning visitors). addInitScript runs
   // on every navigation in this context, before any page script.
   await page.addInitScript(() => {
-    try { sessionStorage.setItem('gt2:entered:v1', 'true') } catch (e) {}
+    try {
+      sessionStorage.setItem('gt2:entered:v1', 'true')
+      localStorage.setItem('gt2:onboarded:v1', 'true')
+    } catch (e) {}
   })
 
   // Navigate to the app root
@@ -105,8 +108,11 @@ test('marketing landing renders with zero console/page/network errors', async ({
   const launch = page.getByRole('button', { name: 'Launch demo' })
   await expect(launch, '"Launch demo" CTA should be visible').toBeVisible()
 
-  // Clicking "Launch demo" enters the app shell (no reload required).
+  // Clicking "Launch demo" enters the first-run tour; Escape skips it and
+  // lands in the app shell (no reload required).
   await launch.click()
+  await expect(page.getByRole('dialog', { name: 'Welcome tour' })).toBeVisible()
+  await page.keyboard.press('Escape')
   await expect(page.locator('.sidebar-brand .word')).toContainText('Grant Tracker')
 
   assertZeroErrors(errors)

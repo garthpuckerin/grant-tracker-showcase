@@ -199,7 +199,7 @@ export const Sidebar = ({ route, navigate, counts, open = false, onClose, onSign
   );
 };
 
-export const Topbar = ({ route, navigate, search, setSearch, onToggleNav, searchRef }) => {
+export const Topbar = ({ route, navigate, search, setSearch, onToggleNav, searchRef, onReplayTour }) => {
   // Which header popover is open ('ai' | 'notif' | 'help' | null). Only one at
   // a time; toggling the same icon closes it.
   const NOTIFICATIONS = toNotifications(useStore((s) => s.insights));
@@ -405,6 +405,11 @@ export const Topbar = ({ route, navigate, search, setSearch, onToggleNav, search
               <button className="tb-help-link" onClick={() => goTo('settings')}>
                 <Icon name="settings" size={13} /> Workspace settings
               </button>
+              {onReplayTour && (
+                <button className="tb-help-link" onClick={() => { setMenu(null); onReplayTour(); }}>
+                  <Icon name="play" size={13} /> Replay the welcome tour
+                </button>
+              )}
             </div>
             <div className="tb-pop-foot">
               <span className="tb-pop-note">Editorial demo build · fixtures only</span>
