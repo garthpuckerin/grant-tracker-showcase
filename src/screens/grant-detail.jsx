@@ -11,7 +11,7 @@ import {
   ROLE_LABEL,
 } from '../rbac.js';
 import { BudgetLineItemForm, ReallocationRequestForm } from '../forms.jsx';
-import { useToast } from '../toast.jsx';
+import { useToast, MockButton } from '../toast.jsx';
 import { shiftIso, fmtMedium, daysFromToday } from '../dates.js';
 
 // Stable empty array so the store selector keeps a constant snapshot identity.
@@ -102,7 +102,7 @@ export const GrantDetail = ({ navigate, route }) => {
           <div className="ph-actions">
             <button className="btn ghost" onClick={() => navigate({ name: 'sf425detail', gi: DATA.grants.indexOf(grant), period: 'FY25 ANNUAL', type: 'Annual', status: 'IN_PROGRESS', due: shiftIso('2026-06-15') })}><Icon name="download" size={12} /> SF-425</button>
             <button className="btn ghost" onClick={() => navigate({ name: 'reports' })}><Icon name="file" size={12} /> Reports</button>
-            <button className="btn" aria-label="More actions" title="More actions"><Icon name="dots" size={12} /></button>
+            <MockButton className="btn" icon="dots" aria-label="More actions" title="More actions" message="More actions are mocked in this demo." />
           </div>
         </div>
 
@@ -282,7 +282,7 @@ const OverviewTab = ({ grant, years, lineItems, grantTasks, navigate, setTab, se
                 <div style={{ minWidth: 60 }} className="kicker">DEADLINE</div>
                 <div style={{ flex: 1 }}>
                   <div style={{ fontSize: 13.5, marginBottom: 4, fontWeight: 500 }}>Q1 progress report due in 5 days</div>
-                  <div className="muted" style={{ fontSize: 12.5, lineHeight: 1.5 }}>Programmatic narrative is 62% drafted. Budget variance section pending PI sign-off. <a href="#" style={{ textDecoration: 'underline', textDecorationColor: 'var(--rule-strong)' }}>Open in workspace →</a></div>
+                  <div className="muted" style={{ fontSize: 12.5, lineHeight: 1.5 }}>Programmatic narrative is 62% drafted. Budget variance section pending PI sign-off. <button className="btn-link" style={{ padding: 0, textDecoration: 'underline', textDecorationColor: 'var(--rule-strong)' }} onClick={() => setTab('tasks')}>Open in workspace →</button></div>
                 </div>
               </div>
               <div className="row" style={{ alignItems: 'flex-start', gap: 16 }}>
@@ -416,6 +416,25 @@ const BudgetTab = ({ grant, years, lineItems, selectedYear, setSelectedYear }) =
     toast('Reallocation denied.');
   };
 
+  // Real action on mock data (§4 ladder tier 1): genuinely build and download a
+  // CSV of the current year's line-item ledger.
+  const exportCsv = () => {
+    const header = ['Category', 'Description', 'Budgeted', 'Spent', 'Encumbered', 'Balance'];
+    const rows = lineItems.map((l) => [l.cat, l.desc, l.budgeted, l.spent, l.encumbered, l.budgeted - l.spent - l.encumbered]);
+    const csv = [header, ...rows]
+      .map((r) => r.map((c) => `"${String(c).replace(/"/g, '""')}"`).join(','))
+      .join('\r\n');
+    const url = URL.createObjectURL(new Blob([csv], { type: 'text/csv;charset=utf-8' }));
+    const a = document.createElement('a');
+    a.href = url;
+    a.download = `${grant.number}-Y${selectedYear}-budget.csv`;
+    document.body.appendChild(a);
+    a.click();
+    a.remove();
+    URL.revokeObjectURL(url);
+    toast('Budget CSV exported.');
+  };
+
   return (
     <div>
       {showForm && (
@@ -460,7 +479,7 @@ const BudgetTab = ({ grant, years, lineItems, selectedYear, setSelectedYear }) =
             <div className="card-title">Budget · Year {selectedYear}</div>
           </div>
           <div className="ph-actions">
-            <button className="btn ghost"><Icon name="download" size={12} /> Export CSV</button>
+            <button className="btn ghost" onClick={exportCsv}><Icon name="download" size={12} /> Export CSV</button>
             <button className="btn accent" onClick={() => setShowForm(true)}><Icon name="plus" size={12} /> Add line item</button>
           </div>
         </div>
@@ -605,7 +624,7 @@ const DocumentsTab = ({ docs }) => (
   <div className="card">
     <div className="card-head">
       <div className="card-title">Documents</div>
-      <button className="btn accent"><Icon name="plus" size={12} /> Upload</button>
+      <MockButton className="btn accent" icon="plus" label="Upload" message="Document upload is mocked in this demo." />
     </div>
     <div className="table-scroll">
     <table className="ledger">
@@ -638,7 +657,7 @@ const DocumentsTab = ({ docs }) => (
             <td className="mono" style={{ fontSize: 12, color: 'var(--ink-3)' }}>{d.date}</td>
             <td className="num r muted">{d.size}</td>
             <td>
-              <button className="btn-link"><Icon name="download" size={12} /></button>
+              <MockButton className="btn-link" icon="download" aria-label="Download document" message="Document download is mocked in this demo." />
             </td>
           </tr>
         ))}
@@ -652,7 +671,7 @@ const TasksTab = ({ tasks }) => (
   <div className="card">
     <div className="card-head">
       <div className="card-title">Tasks</div>
-      <button className="btn accent"><Icon name="plus" size={12} /> New task</button>
+      <MockButton className="btn accent" icon="plus" label="New task" message="Task creation is mocked on this grant view in the demo." />
     </div>
     <div className="table-scroll">
     <table className="ledger">

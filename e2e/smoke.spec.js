@@ -60,7 +60,7 @@ test('fixtures-only render with zero console/page/network errors', async ({ page
   // directly (the gate is bypassed for returning visitors). addInitScript runs
   // on every navigation in this context, before any page script.
   await page.addInitScript(() => {
-    try { localStorage.setItem('gt2:entered:v1', 'true') } catch (e) {}
+    try { sessionStorage.setItem('gt2:entered:v1', 'true') } catch (e) {}
   })
 
   // Navigate to the app root

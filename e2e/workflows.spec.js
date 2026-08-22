@@ -13,7 +13,7 @@ import { test, expect } from '@playwright/test'
 const enterApp = async (page, route) => {
   await page.addInitScript((r) => {
     try {
-      localStorage.setItem('gt2:entered:v1', 'true')
+      sessionStorage.setItem('gt2:entered:v1', 'true')
       if (r) localStorage.setItem('gt2-route', JSON.stringify(r))
     } catch (e) { /* private mode */ }
   }, route)

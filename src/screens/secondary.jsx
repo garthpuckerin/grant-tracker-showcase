@@ -1,11 +1,12 @@
 // AI Insights, Compliance, Reports, Documents, SF-425, Users, Settings — leaner secondary screens
 import React from 'react';
 import { DATA } from '../data.js';
-import { fmt, Icon, Status, Donut } from '../atoms.jsx';
+import { fmt, Icon, Status, Donut, Sparkline, BarGroup } from '../atoms.jsx';
 import { getTheme, setTheme, THEMES } from '../theme.js';
 import { useVizColor, insightColor } from '../viz-color.js';
 import { getDensity, setDensity } from '../density.js';
 import { Drawer } from '../drawer.jsx';
+import { useToast, MockButton } from '../toast.jsx';
 import { shiftIso } from '../dates.js';
 
 export const Insights = ({ navigate }) => {
@@ -41,8 +42,8 @@ export const Insights = ({ navigate }) => {
           </p>
         </div>
         <div className="ph-actions">
-          <button className="btn ghost"><Icon name="settings" size={12} /> Agent settings</button>
-          <button className="btn accent"><Icon name="sparkle" size={12} /> Ask anything</button>
+          <MockButton className="btn ghost" icon="settings" label="Agent settings" />
+          <MockButton className="btn accent" icon="sparkle" label="Ask anything" message="The assistant is mocked in this demo — it runs on the live model in the production build." />
         </div>
       </div>
 
@@ -89,8 +90,8 @@ export const Insights = ({ navigate }) => {
                 )}
               </div>
               <div style={{ display: 'flex', flexDirection: 'column', gap: 6 }}>
-                <button className="btn ghost" style={{ height: 28, fontSize: 11 }}>Dismiss</button>
-                <button className="btn" style={{ height: 28, fontSize: 11 }}>Take action</button>
+                <MockButton className="btn ghost" style={{ height: 28, fontSize: 11 }} label="Dismiss" message="Dismissing insights is mocked in this demo." />
+                <MockButton className="btn" style={{ height: 28, fontSize: 11 }} label="Take action" message="Insight actions are mocked in this demo." />
               </div>
             </div>
           );
@@ -120,8 +121,8 @@ export const Compliance = () => {
           <p className="sub">Sponsor-aware rule engine continuously evaluates every active grant against federal, agency, and institutional policy. Findings surface here and on individual grant pages.</p>
         </div>
         <div className="ph-actions">
-          <button className="btn ghost"><Icon name="download" size={12} /> Export audit</button>
-          <button className="btn"><Icon name="play" size={12} /> Run scan</button>
+          <MockButton className="btn ghost" icon="download" label="Export audit" />
+          <MockButton className="btn" icon="play" label="Run scan" message="The compliance scan is mocked in this demo — it runs the rule engine in the production build." />
         </div>
       </div>
 
@@ -179,7 +180,7 @@ export const Compliance = () => {
                 <div className="muted" style={{ fontSize: 12.5 }}>{f.note}</div>
               </div>
               <span className="mono" style={{ fontSize: 10, color: f.sev === 'HIGH' ? 'var(--alert)' : 'var(--ink-3)', letterSpacing: '0.14em' }}>{f.sev}</span>
-              <button className="btn ghost" style={{ height: 26 }}>Resolve</button>
+              <MockButton className="btn ghost" style={{ height: 26 }} label="Resolve" message="Resolving findings is mocked in this demo." />
             </div>
           ))}
         </div>
@@ -188,7 +189,43 @@ export const Compliance = () => {
   );
 };
 
-export const Reports = () => (
+// Real, derived thumbnail per report kind — reuses the shared chart atoms and
+// the same fixture data the dashboard reads, so no card carries a dead
+// placeholder squiggle. Composition (PIE) uses a segmented share bar.
+const ReportThumb = ({ kind }) => {
+  const monthly = DATA.monthly.map((m) => m.v);
+  if (kind === 'PIE') {
+    const items = DATA.agencyBreakdown.slice(0, 6);
+    const total = items.reduce((s, a) => s + a.budget, 0) || 1;
+    const shades = ['var(--ink)', 'var(--accent)', 'var(--fund)', 'var(--indigo)', 'var(--ink-3)', 'var(--rule-strong)'];
+    return (
+      <div style={{ height: 80, display: 'flex', alignItems: 'center' }} role="img" aria-label="Award share by agency">
+        <div style={{ display: 'flex', width: '100%', height: 16, borderRadius: 2, overflow: 'hidden' }}>
+          {items.map((a, i) => (
+            <div key={a.agency} title={`${a.agency} · ${Math.round((a.budget / total) * 100)}%`}
+              style={{ width: (a.budget / total) * 100 + '%', background: shades[i % shades.length] }} />
+          ))}
+        </div>
+      </div>
+    );
+  }
+  if (kind === 'BAR' || kind === 'STACKED') {
+    return <div style={{ height: 80 }}><BarGroup data={DATA.monthly.slice(-7)} height={80} /></div>;
+  }
+  return <div style={{ height: 80 }}><Sparkline data={monthly} height={80} /></div>;
+};
+
+export const Reports = () => {
+  const toast = useToast();
+  const reports = [
+    { title: 'Portfolio Burn Rate', desc: 'Monthly expenditure across all active grants', kind: 'LINE', last: shiftIso('2026-05-15') },
+    { title: 'Sponsor Concentration', desc: 'Award distribution by federal agency', kind: 'PIE', last: shiftIso('2026-05-10') },
+    { title: 'Category Spend FY26', desc: 'Personnel vs Equipment vs Supplies vs Indirect', kind: 'STACKED', last: shiftIso('2026-05-12') },
+    { title: 'Time-to-Approval', desc: 'Reallocation workflow throughput', kind: 'BAR', last: shiftIso('2026-05-08') },
+    { title: 'PI Workload Index', desc: 'Active grants × % effort per PI', kind: 'RADAR', last: shiftIso('2026-04-30') },
+    { title: 'Audit-Ready Posture', desc: 'Compliance score trend, T-12 months', kind: 'LINE', last: shiftIso('2026-05-14') },
+  ];
+  return (
   <div>
     <div className="page-head">
       <div>
@@ -197,35 +234,30 @@ export const Reports = () => (
         <p className="sub">Custom report builder, scheduled exports, and federal-form generators (SF-425, SF-270). Five chart primitives compose into any view.</p>
       </div>
       <div className="ph-actions">
-        <button className="btn ghost"><Icon name="download" size={12} /> Templates</button>
-        <button className="btn accent"><Icon name="plus" size={12} /> Build report</button>
+        <MockButton className="btn ghost" icon="download" label="Templates" />
+        <MockButton className="btn accent" icon="plus" label="Build report" />
       </div>
     </div>
 
     <div className="g-dense" style={{ display: 'grid', gridTemplateColumns: 'repeat(3, 1fr)', gap: 24, marginBottom: 24 }}>
-      {[
-        { title: 'Portfolio Burn Rate', desc: 'Monthly expenditure across all active grants', kind: 'LINE', last: shiftIso('2026-05-15') },
-        { title: 'Sponsor Concentration', desc: 'Award distribution by federal agency', kind: 'PIE', last: shiftIso('2026-05-10') },
-        { title: 'Category Spend FY26', desc: 'Personnel vs Equipment vs Supplies vs Indirect', kind: 'STACKED', last: shiftIso('2026-05-12') },
-        { title: 'Time-to-Approval', desc: 'Reallocation workflow throughput', kind: 'BAR', last: shiftIso('2026-05-08') },
-        { title: 'PI Workload Index', desc: 'Active grants × % effort per PI', kind: 'RADAR', last: shiftIso('2026-04-30') },
-        { title: 'Audit-Ready Posture', desc: 'Compliance score trend, T-12 months', kind: 'LINE', last: shiftIso('2026-05-14') },
-      ].map((r, i) => (
-        <div key={i} className="card" style={{ cursor: 'pointer' }}>
+      {reports.map((r, i) => (
+        <button
+          key={i}
+          type="button"
+          className="card report-card"
+          style={{ cursor: 'pointer', textAlign: 'left', font: 'inherit', color: 'inherit', width: '100%' }}
+          onClick={() => toast(`Opening “${r.title}” — the report viewer is mocked in this demo.`, 'indigo', 'Demo')}
+        >
           <div className="card-body" style={{ padding: 20 }}>
             <div style={{ display: 'flex', justifyContent: 'space-between', marginBottom: 14 }}>
               <span className="kicker">{r.kind}</span>
               <span className="mono" style={{ fontSize: 10, color: 'var(--ink-3)' }}>{r.last}</span>
             </div>
-            {/* Placeholder chart */}
-            <svg viewBox="0 0 200 80" style={{ width: '100%', height: 80, marginBottom: 14 }}>
-              <path d="M0 60 L 30 50 L 60 55 L 90 30 L 120 35 L 150 20 L 180 25 L 200 10" stroke="var(--ink)" strokeWidth="1.2" fill="none" />
-              <path d="M0 60 L 30 50 L 60 55 L 90 30 L 120 35 L 150 20 L 180 25 L 200 10 L 200 80 L 0 80 Z" fill="oklch(0.95 0.01 80)" />
-            </svg>
-            <div className="serif" style={{ fontSize: 20, lineHeight: 1.15, marginBottom: 6 }}>{r.title}</div>
+            <ReportThumb kind={r.kind} />
+            <div className="serif" style={{ fontSize: 20, lineHeight: 1.15, margin: '14px 0 6px' }}>{r.title}</div>
             <div className="muted" style={{ fontSize: 12.5 }}>{r.desc}</div>
           </div>
-        </div>
+        </button>
       ))}
     </div>
 
@@ -265,7 +297,8 @@ export const Reports = () => (
       </table>
     </div>
   </div>
-);
+  );
+};
 
 export const Documents = () => {
   const D = DATA;
@@ -278,7 +311,7 @@ export const Documents = () => {
           <p className="sub">Award notices, budget justifications, narratives, agreements, and reports — searchable, typed, AI-tagged.</p>
         </div>
         <div className="ph-actions">
-          <button className="btn accent"><Icon name="plus" size={12} /> Upload</button>
+          <MockButton className="btn accent" icon="plus" label="Upload" message="Document upload is mocked in this demo." />
         </div>
       </div>
       <div className="card">
@@ -346,8 +379,8 @@ export const SF425 = ({ navigate }) => {
           <p className="sub">Federal financial report packages — generated, validated against 2 CFR 200, and exported in OMB-conformant format. Open a filing to review the line-by-line report; every figure cross-foots to the grant’s budget and expenses.</p>
         </div>
         <div className="ph-actions">
-          <button className="btn ghost"><Icon name="download" size={12} /> Bundle export</button>
-          <button className="btn accent"><Icon name="plus" size={12} /> New filing</button>
+          <MockButton className="btn ghost" icon="download" label="Bundle export" />
+          <MockButton className="btn accent" icon="plus" label="New filing" />
         </div>
       </div>
       <div className="card">
@@ -469,8 +502,8 @@ export const SF425Detail = ({ navigate, route }) => {
           <p className="sub">Federal Financial Report for {grant.title}. Recipient: State University Research Office · SAM.gov UEI on file. Every dollar figure is derived from this award’s budget and expenditures.</p>
         </div>
         <div className="ph-actions">
-          <button className="btn ghost"><Icon name="download" size={12} /> Export OMB PDF</button>
-          <button className="btn accent"><Icon name="check" size={12} /> Certify &amp; submit</button>
+          <MockButton className="btn ghost" icon="download" label="Export OMB PDF" />
+          <MockButton className="btn accent" icon="check" label="Certify & submit" message="Certification & submission to the sponsor portal is mocked in this demo." />
         </div>
       </div>
 
@@ -613,7 +646,7 @@ export const Members = () => {
           <p className="sub">Workspace members with role-based permissions — Admin, PI, Finance, Viewer. Select a member to view their effort allocation and contact details.</p>
         </div>
         <div className="ph-actions">
-          <button className="btn accent"><Icon name="plus" size={12} /> Invite</button>
+          <MockButton className="btn accent" icon="plus" label="Invite" message="Member invitations are mocked in this demo." />
         </div>
       </div>
 
@@ -847,8 +880,8 @@ export const Settings = () => {
           </p>
         </div>
         <div className="ph-actions">
-          <button className="btn ghost"><Icon name="download" size={12} /> Export config</button>
-          <button className="btn accent"><Icon name="plus" size={12} /> Add integration</button>
+          <MockButton className="btn ghost" icon="download" label="Export config" />
+          <MockButton className="btn accent" icon="plus" label="Add integration" />
         </div>
       </div>
 

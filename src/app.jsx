@@ -10,12 +10,14 @@ import { Insights, Compliance, Reports, Documents, SF425, SF425Detail, Members, 
 import { WorkspaceSkeleton } from './skeleton.jsx';
 import { Landing } from './Landing.jsx';
 
-// Persistence key for the marketing-landing gate. Once the visitor clicks
-// "Launch demo" we remember it so reloads land back in the app, not the pitch.
+// Marketing-landing gate key. SESSION-scoped (sessionStorage), so in-session
+// reloads skip the pitch but a fresh visit — including a reveal-day teaser
+// peeker who returns — always sees the landing again. (Once-ever onboarding, if
+// added later, belongs in localStorage; the entered flag deliberately does not.)
 const ENTERED_KEY = 'gt2:entered:v1';
 
 const readEntered = () => {
-  try { return localStorage.getItem(ENTERED_KEY) === 'true'; }
+  try { return sessionStorage.getItem(ENTERED_KEY) === 'true'; }
   catch { return false; }
 };
 
@@ -33,13 +35,13 @@ const App = () => {
 
   // Enter the demo from the marketing landing — persist so reloads stay in.
   const enterDemo = React.useCallback(() => {
-    try { localStorage.setItem(ENTERED_KEY, 'true'); } catch (e) {}
+    try { sessionStorage.setItem(ENTERED_KEY, 'true'); } catch (e) {}
     setEntered(true);
   }, []);
 
   // Sign out — clear the gate, close the drawer, and return to the landing.
   const signOut = React.useCallback(() => {
-    try { localStorage.removeItem(ENTERED_KEY); } catch (e) {}
+    try { sessionStorage.removeItem(ENTERED_KEY); } catch (e) {}
     setNavOpen(false);
     setEntered(false);
   }, []);

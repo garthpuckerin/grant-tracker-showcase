@@ -3,6 +3,7 @@ import React from 'react';
 import { DATA } from '../data.js';
 import { fmt, Icon, Donut, Utilization, BarGroup, LineArea } from '../atoms.jsx';
 import { insightColor, utilizationColor } from '../viz-color.js';
+import { MockButton } from '../toast.jsx';
 import { TODAY_MEDIUM, TODAY_FISCAL, TODAY_FQ_REVERSED } from '../dates.js';
 
 export const Dashboard = ({ navigate }) => {
@@ -64,8 +65,8 @@ export const Dashboard = ({ navigate }) => {
           </p>
         </div>
         <div className="ph-actions">
-          <button className="btn ghost"><Icon name="download" size={12} /> Export</button>
-          <button className="btn accent"><Icon name="plus" size={12} /> New Grant</button>
+          <MockButton className="btn ghost" icon="download" label="Export" message="Portfolio export is mocked in this demo." />
+          <button className="btn accent" onClick={() => navigate({ name: 'grants' })}><Icon name="plus" size={12} /> New Grant</button>
         </div>
       </div>
 
