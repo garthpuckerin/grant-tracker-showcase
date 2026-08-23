@@ -10,7 +10,8 @@ export default defineConfig({
   reporter: 'list',
 
   use: {
-    baseURL: 'http://localhost:3300',
+    // BASE_URL=https://… runs the suite against a live deployment (no local server).
+    baseURL: process.env.BASE_URL || 'http://localhost:3300',
     trace: 'on-first-retry',
   },
 
@@ -21,7 +22,7 @@ export default defineConfig({
     },
   ],
 
-  webServer: {
+  webServer: process.env.BASE_URL ? undefined : {
     command: 'npm run dev',
     url: 'http://localhost:3300',
     reuseExistingServer: !process.env.CI,

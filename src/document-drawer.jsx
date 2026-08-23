@@ -100,7 +100,7 @@ export const UploadDocumentForm = ({ grantId, onClose, onCreated }) => {
         grantId: values.grantId,
       });
       setBusy(false);
-      onCreated(`“${name}” uploaded.`);
+      onCreated(`“${name}” added to the library — file storage is outside this demo’s scope.`);
       onClose();
     }, 600);
   };

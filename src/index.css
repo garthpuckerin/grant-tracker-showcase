@@ -1451,6 +1451,9 @@ button { font-family: inherit; cursor: pointer; }
    A11y, empty states, and loading skeletons (R3).
    ============================================================ */
 
+/* iOS: disable text auto-inflation (root cause of landscape font enlargement on the hub, 08-20). */
+html { -webkit-text-size-adjust: 100%; }
+
 /* Keyboard focus ring — editorial amber, only on keyboard nav
    (:focus-visible), never on mouse click. */
 :focus { outline: none; }

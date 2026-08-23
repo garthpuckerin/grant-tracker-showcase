@@ -601,7 +601,7 @@ export const SF425Detail = ({ navigate, route }) => {
     let id = filing?.id;
     if (!id) { id = 'sf-' + Date.now(); addFiling({ id, gi: route.gi, period: route.period, type: route.type, status: 'IN_PROGRESS', due: route.due }); }
     certifyFiling(id, user.id);
-    toast(`SF-425 ${route.period} certified and submitted for ${grant.number}.`);
+    toast(`SF-425 ${route.period} certified for ${grant.number} — sponsor e-submission is handled by the production build.`);
   };
 
   // Live cross-foot checks — each must hold or the filing cannot be certified.
