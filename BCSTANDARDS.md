@@ -29,7 +29,7 @@
 ## Code Comprehension (Comprehension Ladder Standard)
 <!-- bcstd:managed comprehension v1 -->
 - Graph repo_id: `github.com/garthpuckerin/grant-tracker-showcase`
-- This repo is **new and not yet ingested** into the mimir2-graph. Until it is,
+- This repo is **new and not yet ingested** into the code-graph. Until it is,
   raw `Read`/`Grep` are the correct tools here; once ingested, query the ladder
   (`map` / `find` / `explain` / `neighbors` / `read`) with the repo_id above
   before raw reads for structure/behaviour/relationship questions. Note: this is
