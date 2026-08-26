@@ -1576,6 +1576,9 @@ select:focus-visible {
   backdrop-filter: blur(2px);
 }
 .modal-card {
+  display: flex;
+  flex-direction: column;
+  max-height: 100%;
   width: 100%;
   max-width: 720px;
   background: var(--surface);
@@ -1605,7 +1608,7 @@ select:focus-visible {
   color: var(--ink-3);
   max-width: 56ch;
 }
-.modal-body { padding: 22px 24px 24px; }
+.modal-body { padding: 22px 24px 24px; flex: 1 1 auto; min-height: 0; overflow-y: auto; }
 
 .form-grid {
   display: grid;
@@ -2169,7 +2172,7 @@ select.field-input { cursor: pointer; }
   .drawer-backdrop { justify-content: stretch; }
   .drawer-panel { max-width: 100%; border-left: 0; animation: sheet-up 0.22s ease; }
   @keyframes sheet-up { from { transform: translateY(18px); opacity: 0; } to { transform: none; opacity: 1; } }
-  .modal-card { width: 100% !important; max-width: 100% !important; max-height: 100dvh; border-radius: 0; }
+  .modal-card { width: 100% !important; max-width: 100% !important; max-height: 100%; border-radius: 0; }
 
   /* Touch targets ≥ 44px. */
   .btn { height: auto; min-height: 44px; }
@@ -2184,7 +2187,48 @@ select.field-input { cursor: pointer; }
   .mtab { display: none !important; }
   .main-inner { padding-bottom: 56px; }
 }
-/* Phones: breadcrumbs reduce to the current screen. */
-@media (max-width: 599px) {
+/* Narrow widths: breadcrumbs reduce to the current screen (a full trail
+   wraps the top bar into a second row). */
+@media (max-width: 767px) {
   .crumbs span:not(.cur), .crumbs .sep { display: none; }
+}
+
+/* Short landscape-phone heights in the rail tier: the 10-item rail is taller
+   than the viewport — make the rail itself scrollable (tooltips off; they'd
+   clip under overflow) and tighten its rhythm so most of it fits. */
+@media (min-width: 600px) and (max-width: 1023px) and (max-height: 600px) {
+  .sidebar { overflow-y: auto; overflow-x: hidden; }
+  .sidebar-item::after { display: none; }
+  .sidebar-item { height: 38px; margin: 1px auto; }
+  .sidebar-section { padding: 2px 8px; }
+  .sidebar-brand { padding: 0 0 8px; }
+  .sidebar-user { padding: 8px 0; }
+}
+
+/* The boot skeleton's placeholder bars must never force sideways scroll. */
+.skeleton { max-width: 100%; }
+
+/* ≤767 phone-portrait fixes from the viewport sweep: rows that must wrap or
+   shrink instead of forcing sideways scroll. */
+@media (max-width: 767px) {
+  .page-head { flex-direction: column; align-items: stretch; gap: 14px; }
+  .ph-actions { flex-wrap: wrap; }
+  .tabs { flex-wrap: wrap; }
+  .card-head { flex-wrap: wrap; row-gap: 4px; }
+  .metric .val { font-size: clamp(26px, 8.5vw, 36px); }
+  .crumbs { min-width: 0; overflow: hidden; }
+  .crumbs .cur { white-space: nowrap; overflow: hidden; text-overflow: ellipsis; display: inline-block; max-width: 38vw; vertical-align: bottom; }
+}
+
+/* ≤399 (narrow phones): five 44px topbar icons + a crumb cannot share 360px —
+   drop the mocked AI-assistant icon and tighten so the bar stays one row. */
+@media (max-width: 399px) {
+  .tb-actions [aria-label="AI Assistant"] { display: none; }
+  .topbar-inner { gap: 8px; }
+  .crumbs .cur { max-width: 30vw; }
+}
+
+/* The grant masthead's action row lives outside .page-head — let it wrap too. */
+@media (max-width: 767px) {
+  .gd-masthead-row { flex-wrap: wrap; }
 }

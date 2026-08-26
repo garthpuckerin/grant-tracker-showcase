@@ -450,7 +450,7 @@ const BudgetTab = ({ grant, years, lineItems, selectedYear, setSelectedYear }) =
         />
       )}
       {/* Year picker */}
-      <div style={{ display: 'flex', alignItems: 'center', gap: 12, marginBottom: 24 }}>
+      <div style={{ display: 'flex', alignItems: 'center', gap: 12, marginBottom: 24, flexWrap: 'wrap' }}>
         <span className="kicker">Fiscal Year</span>
         <div className="pill-group">
           {years.map(y => (

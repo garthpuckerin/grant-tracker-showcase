@@ -106,3 +106,39 @@ test('600 (rail floor) and 599 (phone): the nav switches from rail to bottom tab
   expect(L.mtab.position).toBe('fixed')
   expect(L.sideways).toBe(false)
 })
+
+test('844×390 (phone landscape): the rail nav is reachable and the reallocation modal fits with a scrolling body', async ({ page }) => {
+  await page.setViewportSize({ width: 844, height: 390 })
+  await enterApp(page, { name: 'grant', id: '1', tab: 'budget' })
+  await page.goto('/')
+  await expect(page.locator('.sidebar-item').first()).toBeVisible()
+
+  // Every nav destination is reachable: the rail scrolls within the viewport.
+  const nav = await page.evaluate(() => {
+    const sb = document.querySelector('.sidebar')
+    return { overflowY: getComputedStyle(sb).overflowY, scrollable: sb.scrollHeight > sb.clientHeight, vh: innerHeight }
+  })
+  expect(nav.overflowY).toBe('auto')
+  await page.evaluate(() => { const sb = document.querySelector('.sidebar'); sb.scrollTop = sb.scrollHeight })
+  const settingsVisible = await page.evaluate(() => {
+    const items = [...document.querySelectorAll('.sidebar-item')]
+    const last = items[items.length - 1].getBoundingClientRect()
+    return last.bottom <= innerHeight + 1
+  })
+  expect(settingsVisible).toBe(true)
+
+  // The reallocation modal fits the short viewport and its body scrolls.
+  await page.getByRole('button', { name: 'budget', exact: true }).click()
+  await page.getByRole('button', { name: /Reallocate funds/ }).click()
+  const modal = await page.evaluate(() => {
+    const card = document.querySelector('.modal-card')
+    const body = document.querySelector('.modal-body')
+    const b = card.getBoundingClientRect()
+    return { top: Math.round(b.top), bottom: Math.round(b.bottom), vh: innerHeight, bodyOverflow: getComputedStyle(body).overflowY }
+  })
+  expect(modal.top).toBeGreaterThanOrEqual(-1)
+  expect(modal.bottom).toBeLessThanOrEqual(modal.vh + 1)
+  expect(modal.bodyOverflow).toBe('auto')
+  // The submit action is reachable by scrolling the modal body.
+  await expect(page.getByRole('button', { name: 'Submit request' })).toBeVisible()
+})
