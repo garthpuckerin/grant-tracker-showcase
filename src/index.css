@@ -2232,3 +2232,10 @@ select.field-input { cursor: pointer; }
 @media (max-width: 767px) {
   .gd-masthead-row { flex-wrap: wrap; }
 }
+
+/* Dashboard chart drill-down: one accessible click-target per month over the
+   chart (bars or line); hover/focus tints the column. */
+.chart-hits { position: absolute; inset: 0 0 18px 0; display: flex; gap: 6px; }
+.chart-hits button { flex: 1; min-width: 0; background: transparent; border: 0; cursor: pointer; border-radius: 2px; padding: 0; }
+.chart-hits button:hover, .chart-hits button:focus-visible { background: color-mix(in oklch, var(--ink) 7%, transparent); }
+.chart-note { font-size: 10px; letter-spacing: 0.08em; text-transform: uppercase; color: var(--ink-4); margin-top: 10px; }

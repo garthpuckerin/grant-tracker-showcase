@@ -90,3 +90,34 @@ test('uploading a document adds it to the library, the grant tab, and the sideba
   await page.getByRole('dialog').getByRole('button', { name: 'Download' }).click()
   await expect(page.locator('.toast-flag')).toContainText('would download')
 })
+
+test('the dashboard chart is backed by numbers: month drill-down cross-foots to the clicked bar', async ({ page }) => {
+  await enterApp(page, { name: 'dashboard' })
+  await page.goto('/')
+  await expect(page.locator('[data-window-total]')).toBeVisible()
+
+  // The window Total equals the sum of the plotted months (read from the hit targets).
+  const sums = await page.evaluate(() => {
+    const parse = (s) => Number((s.match(/\$([\d,]+)/) || [])[1]?.replace(/,/g, ''))
+    const months = [...document.querySelectorAll('.chart-hits button')].map((b) => parse(b.getAttribute('aria-label')))
+    return { months, count: months.length }
+  })
+  expect(sums.count).toBe(12)
+  expect(sums.months.every((v) => v > 0)).toBe(true)
+
+  // Click a month → the drawer's TOTAL equals that bar's exact value and the
+  // allocation rows sum to it.
+  const target = page.locator('.chart-hits button').nth(5)
+  const label = await target.getAttribute('aria-label')
+  const barValue = Number(label.match(/\$([\d,]+)/)[1].replace(/,/g, ''))
+  await target.click()
+  await expect(page.getByRole('dialog')).toBeVisible()
+  const drawer = await page.evaluate(() => {
+    const parse = (s) => Number(s.replace(/[^\d]/g, ''))
+    const total = parse(document.querySelector('[data-month-total]').textContent)
+    const rows = [...document.querySelectorAll('.drawer-body tbody td.num.r:first-of-type, .drawer-body tbody tr td:nth-child(2)')].map((td) => parse(td.textContent))
+    return { total, rowSum: rows.reduce((s, v) => s + v, 0) }
+  })
+  expect(drawer.total).toBe(barValue)
+  expect(drawer.rowSum).toBe(barValue)
+})

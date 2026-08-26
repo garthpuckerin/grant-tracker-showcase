@@ -5,6 +5,7 @@ import { fmt, Icon, Donut, Utilization, BarGroup, LineArea } from '../atoms.jsx'
 import { insightColor, utilizationColor } from '../viz-color.js';
 import { MockButton } from '../toast.jsx';
 import { useStore } from '../store.js';
+import { MonthDrawer } from '../month-drawer.jsx';
 import { TODAY_MEDIUM, TODAY_FISCAL, TODAY_FQ_REVERSED } from '../dates.js';
 
 export const Dashboard = ({ navigate }) => {
@@ -31,6 +32,7 @@ export const Dashboard = ({ navigate }) => {
   // Monthly Expenditure chart controls — view (bars/line) + trailing range.
   const [chartMode, setChartMode] = React.useState('bars'); // bars | line
   const [range, setRange] = React.useState('12M');          // 3M | 6M | 12M | FY | All
+  const [monthSel, setMonthSel] = React.useState(null);      // month drill-down drawer
   const monthlyData = (() => {
     const m = D.monthly;
     switch (range) {
@@ -44,7 +46,8 @@ export const Dashboard = ({ navigate }) => {
       default:    return m;
     }
   })();
-  const avgMonthly = monthlyData.reduce((s, x) => s + x.v, 0) / (monthlyData.length || 1);
+  const windowTotal = monthlyData.reduce((s, x) => s + x.v, 0);
+  const avgMonthly = windowTotal / (monthlyData.length || 1);
   const peakMonth = monthlyData.reduce((a, b) => (b.v > a.v ? b : a), monthlyData[0] || { v: 0 });
 
   // Watchlist — at-risk grants (highest utilization or near end)
@@ -100,6 +103,8 @@ export const Dashboard = ({ navigate }) => {
         </div>
       </div>
 
+      <MonthDrawer month={monthSel} months={monthlyData} onClose={() => setMonthSel(null)} navigate={navigate} />
+
       {/* Two column row: Spending chart + AI insights */}
       <div className="g-split" style={{ display: 'grid', gridTemplateColumns: '1.6fr 1fr', gap: 24, marginTop: 24 }}>
 
@@ -127,6 +132,10 @@ export const Dashboard = ({ navigate }) => {
           <div className="card-body">
             <div style={{ display: 'flex', alignItems: 'baseline', gap: 32, marginBottom: 18 }}>
               <div className="num-block">
+                <div className="lbl">Total</div>
+                <div className="val serif" data-window-total>{fmt.money(windowTotal, { compact: true })}</div>
+              </div>
+              <div className="num-block">
                 <div className="lbl">Avg / month</div>
                 <div className="val serif">${(avgMonthly / 1000).toFixed(0)}K</div>
               </div>
@@ -139,9 +148,24 @@ export const Dashboard = ({ navigate }) => {
                 <div className="val serif">{monthlyData.length}<span style={{ fontFamily: 'var(--font-mono)', fontSize: 11, color: 'var(--ink-3)', marginLeft: 6 }}>month{monthlyData.length !== 1 ? 's' : ''}</span></div>
               </div>
             </div>
-            {chartMode === 'bars'
-              ? <BarGroup data={monthlyData} height={180} />
-              : <LineArea data={monthlyData} height={180} />}
+            {/* Chart + a click-target per month: every bar is backed by numbers. */}
+            <div style={{ position: 'relative' }}>
+              {chartMode === 'bars'
+                ? <BarGroup data={monthlyData} height={180} />
+                : <LineArea data={monthlyData} height={180} />}
+              <div className="chart-hits">
+                {monthlyData.map((d, i) => (
+                  <button
+                    key={`${d.m}-${d.yy}-${i}`}
+                    type="button"
+                    aria-label={`${d.m} ${d.yy} — ${fmt.money(d.v)}. View the breakdown`}
+                    title={`${d.m} ${d.yy} · ${fmt.money(d.v)} — click for the breakdown`}
+                    onClick={() => setMonthSel(d)}
+                  />
+                ))}
+              </div>
+            </div>
+            <div className="chart-note mono">Click a month for the numbers behind it</div>
           </div>
         </div>
 
