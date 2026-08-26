@@ -70,6 +70,13 @@ export const TaskDrawer = ({ task, onClose, navigate }) => {
           <button className={`btn ${done ? 'ghost' : 'accent'}`} style={{ marginLeft: 'auto' }} onClick={toggleDone}>
             <Icon name="check" size={12} /> {done ? 'Reopen' : 'Mark complete'}
           </button>
+          <button
+            className="btn ghost"
+            title="Reminders/notifications surface in-app in the engine; email delivery is on the roadmap"
+            onClick={() => toast(`Reminder for ${task.assigned?.name || 'the assignee'} recorded — no email is sent in this demo.`, 'indigo', 'Demo')}
+          >
+            <Icon name="bell" size={12} /> Send reminder
+          </button>
         </div>
 
         <p className="muted" style={{ fontSize: 13.5, lineHeight: 1.55, margin: 0 }}>{task.desc}</p>

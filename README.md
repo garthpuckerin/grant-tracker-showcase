@@ -77,13 +77,14 @@ Honesty matters more than polish, so here's the exact boundary:
 
 | Aspect | In this public demo | In the private production build |
 |---|---|---|
-| **Data** | Mock fixtures, deterministically date-shifted so the portfolio always looks current | Real awards via ERP / Workday Financials feed |
-| **RBAC** | **Real permission logic** (`rbac.js`) — the acting-role switch genuinely changes what's permitted | Real SSO auth + server-enforced RBAC, per-action, with an audit log |
-| **Reallocation approval** | **Real** request → approve/deny state machine, separation of duties, and live budget re-derivation — in memory | Same, persisted, wired to sponsor prior-approval and notifications |
-| **SF-425** | **Real** cross-footing derivation from the ledger; validator blocks a report that doesn't tie out | Same, on real data, with e-submission to sponsor portals |
-| **Compliance** | Derived from one dataset (2 CFR 200 / NIH / NSF rules) so views can't diverge | Real rule engine + SAM.gov / Grants.gov / Research.gov connectivity |
-| **Persistence** | In-memory / localStorage | Postgres with row-level security and an immutable audit trail |
-| **Backend** | None — frontend only | Private codebase (auth, database, integrations, reporting) |
+| **Data** | Mock fixtures, deterministically date-shifted so the portfolio always looks current | Postgres-backed awards (Prisma), org/tenant-scoped, with API keys + webhooks for integrations |
+| **RBAC** | **Real permission logic** (`rbac.js`) — the acting-role switch genuinely changes what's permitted | Real auth (Clerk) + server-side authorization with an audit log (tRPC audit router) |
+| **Reallocation approval** | **Real** request → approve/deny state machine, separation of duties, and live budget re-derivation — in memory | The engine's AI budget agent generates reallocation *recommendations* today; this demo's approval workflow is the design spec for the engine's (in development) |
+| **SF-425** | **Real** cross-footing derivation from the ledger; validator blocks a report that doesn't tie out | Demo-led design — this cross-footing model specifies the engine's federal-reporting module (in development) |
+| **Compliance** | Derived from one dataset (2 CFR 200 / NIH / NSF rules) so views can't diverge | ComplianceAssessment engine (2 CFR 200-aware); external registry connectivity (SAM.gov et al.) on the roadmap |
+| **Persistence** | In-memory / localStorage | Postgres (Prisma) with tenant scoping and an audit log |
+| **Email & notifications** | Explained in place — nothing is sent | In-app notifications + an agent notification service; email delivery on the roadmap |
+| **Backend** | None — frontend only | Private codebase (Next.js · tRPC · Prisma · PostgreSQL · multi-agent AI layer) |
 
 The production engine is private by design — the demo proves the *product experience, the federal
 domain fluency, and the data-modeling discipline*; the engine is the IP.

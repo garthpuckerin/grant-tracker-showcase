@@ -139,7 +139,7 @@ export const Compliance = () => {
   };
   // Demo-scoped export: explain rather than produce a file.
   const exportAudit = () => {
-    toast(`Audit export would include ${frameworks.length} frameworks and ${findings.length} findings (CSV / PDF) — file export is handled by the production build.`, 'indigo', 'Demo');
+    toast(`Audit export would include ${frameworks.length} frameworks and ${findings.length} findings (CSV / PDF) — no file is produced in this demo.`, 'indigo', 'Demo');
   };
 
   return (
@@ -274,7 +274,7 @@ const ReportViewer = ({ report, onClose }) => {
   if (!report) return null;
   const data = reportData(report.kind);
   const exportCsv = () => {
-    toast(`“${report.title}” would export ${data.rows.length} rows as CSV — file export is handled by the production build.`, 'indigo', 'Demo');
+    toast(`“${report.title}” would export ${data.rows.length} rows as CSV — no file is produced in this demo.`, 'indigo', 'Demo');
   };
   return (
     <Drawer open={!!report} onClose={onClose} title={report.title} subtitle={`${report.kind} · last run ${report.last}`}>
@@ -601,7 +601,7 @@ export const SF425Detail = ({ navigate, route }) => {
     let id = filing?.id;
     if (!id) { id = 'sf-' + Date.now(); addFiling({ id, gi: route.gi, period: route.period, type: route.type, status: 'IN_PROGRESS', due: route.due }); }
     certifyFiling(id, user.id);
-    toast(`SF-425 ${route.period} certified for ${grant.number} — sponsor e-submission is handled by the production build.`);
+    toast(`SF-425 ${route.period} certified for ${grant.number} — no submission is made from this demo.`);
   };
 
   // Live cross-foot checks — each must hold or the filing cannot be certified.

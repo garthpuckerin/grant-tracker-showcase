@@ -41,7 +41,7 @@ export const ToastProvider = ({ children }) => {
 // toast so any screen can drop one in without wiring the hook itself.
 export const MockButton = ({ className = 'btn ghost', icon, label, children, message, tone = 'indigo', ...rest }) => {
   const toast = useToast();
-  const notice = message || `${label || 'This action'} is mocked in this portfolio demo — it’s wired to a real backend in the production build.`;
+  const notice = message || `${label || 'This action'} is mocked in this portfolio demo.`;
   return (
     <button className={className} onClick={() => toast(notice, tone, 'Demo')} {...rest}>
       {icon && <Icon name={icon} size={12} />}{icon && (label || children) ? ' ' : ''}{label}{children}

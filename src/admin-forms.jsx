@@ -41,7 +41,7 @@ export const InviteMemberForm = ({ onClose, onCreated }) => {
       const initials = f.values.name.trim().split(/\s+/).map((w) => w[0]).join('').slice(0, 2).toUpperCase();
       addMember({ id: 'u-' + Date.now(), name: f.values.name.trim(), email: f.values.email.trim(), role: f.values.role, initials, invited: true });
       setBusy(false);
-      onCreated(`Invitation recorded for ${f.values.email.trim()} — email delivery is handled by the production build.`);
+      onCreated(`Invitation recorded for ${f.values.email.trim()} — no email is sent in this demo.`);
       onClose();
     }, 600);
   };

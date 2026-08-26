@@ -427,7 +427,7 @@ const BudgetTab = ({ grant, years, lineItems, selectedYear, setSelectedYear }) =
 
   // Demo-scoped export: explain rather than produce a file.
   const exportCsv = () => {
-    toast(`${grant.number} · Year ${selectedYear} budget would export as CSV (${lineItems.length} line items) — file export is handled by the production build.`, 'indigo', 'Demo');
+    toast(`${grant.number} · Year ${selectedYear} budget would export as CSV (${lineItems.length} line items) — no file is produced in this demo.`, 'indigo', 'Demo');
   };
 
   return (
@@ -444,6 +444,7 @@ const BudgetTab = ({ grant, years, lineItems, selectedYear, setSelectedYear }) =
           grantId={grant.id}
           lineItems={lineItems}
           currentUser={user}
+          initialFrom={typeof showRealloc === 'string' ? showRealloc : undefined}
           onClose={() => setShowRealloc(false)}
           onCreated={(msg) => toast(msg)}
         />
@@ -512,7 +513,18 @@ const BudgetTab = ({ grant, years, lineItems, selectedYear, setSelectedYear }) =
                       <span className="mono" style={{ fontSize: 11, color: pct > 0.9 ? 'var(--alert)' : 'var(--ink-2)', minWidth: 32 }}>{fmt.pct(pct, 0)}</span>
                     </div>
                   </td>
-                  <td><Icon name="dots" size={14} /></td>
+                  <td>
+                    <button
+                      type="button"
+                      className="btn-link"
+                      style={{ padding: 2 }}
+                      aria-label={`Adjust ${l.cat} via reallocation`}
+                      title="Authorized budgets change through reallocation (2 CFR 200.308 prior approval), not in-place edits"
+                      onClick={() => canRequest ? setShowRealloc(l.cat) : toast(requestBlocked)}
+                    >
+                      <Icon name="dots" size={14} />
+                    </button>
+                  </td>
                 </tr>
               );
             })}

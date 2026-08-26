@@ -389,7 +389,7 @@ export const BudgetLineItemForm = ({ onClose, onCreated, grantId }) => {
 // amount is validated against the source category's available balance. Submits
 // a PENDING request (requestReallocation) that Finance/Admin must approve.
 // ------------------------------------------------------------------
-export const ReallocationRequestForm = ({ grantId, lineItems, currentUser, onClose, onCreated }) => {
+export const ReallocationRequestForm = ({ grantId, lineItems, currentUser, initialFrom, onClose, onCreated }) => {
   // Available balance per category from the (delta-merged) line-items.
   const cats = lineItems.map((l) => l.cat);
   const balances = React.useMemo(() => {
@@ -399,8 +399,9 @@ export const ReallocationRequestForm = ({ grantId, lineItems, currentUser, onClo
   }, [lineItems]);
 
   const rules = React.useMemo(() => makeReallocationRules(balances), [balances]);
+  const startFrom = initialFrom && cats.includes(initialFrom) ? initialFrom : (cats[0] || '');
   const f = useFormState(
-    { fromCat: cats[0] || '', toCat: cats[1] || '', amount: '', reason: '' },
+    { fromCat: startFrom, toCat: cats.find((c) => c !== startFrom) || '', amount: '', reason: '' },
     rules,
   );
   const [busy, setBusy] = React.useState(false);
