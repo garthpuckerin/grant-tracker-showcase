@@ -165,6 +165,14 @@ const App = () => {
 
   const navigate = (r) => setRoute(r);
 
+  // A new destination starts at the TOP — the .main scroll container
+  // otherwise keeps the previous screen's scroll offset (owner-caught:
+  // switching tabs landed mid-page).
+  React.useEffect(() => {
+    document.querySelector('.main')?.scrollTo?.(0, 0);
+    window.scrollTo(0, 0);
+  }, [route]);
+
   // Marketing-landing gate — shown before the app on first visit. "Launch demo"
   // enters; the gate is bypassed on subsequent visits via the persisted flag.
   if (!entered) return <Landing onEnter={enterDemo} />;

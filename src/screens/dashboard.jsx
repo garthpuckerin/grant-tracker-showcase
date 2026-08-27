@@ -7,6 +7,7 @@ import { ACTION_LABEL, insightRoute } from '../insight-actions.js';
 import { visibleGrants, scopeByGrant, scopeInsights, scopeMonthly } from '../scope.js';
 import { MockButton } from '../toast.jsx';
 import { useStore, useCurrentUser, dismissInsight } from '../store.js';
+import { useWorkstation } from '../surface.js';
 import { MonthDrawer } from '../month-drawer.jsx';
 import { TODAY_MEDIUM, TODAY_FISCAL, TODAY_FQ_REVERSED } from '../dates.js';
 
@@ -21,6 +22,8 @@ export const Dashboard = ({ navigate }) => {
   // monthly series scopes through the same per-award allocation the month
   // drawer shows, so scoped bars still cross-foot to the dollar.
   const user = useCurrentUser();
+  // Authoring affordances live on workstation widths only (surface.js).
+  const workstation = useWorkstation();
   const D = (() => {
     const grants = visibleGrants(user, DATA.grants);
     const agencyBreakdown = (() => {
@@ -99,10 +102,12 @@ export const Dashboard = ({ navigate }) => {
             <span style={{ color: 'var(--ink)' }}>{activeCount} active grants</span> across {D.agencyBreakdown.length} federal agencies. Year-to-date utilization is on track at {fmt.pct(utilization, 1)} with {overdue ? <span style={{ color: 'var(--alert)' }}>{overdue} overdue task{overdue > 1 ? 's' : ''}</span> : 'no overdue items'} requiring attention.
           </p>
         </div>
-        <div className="ph-actions">
-          <MockButton className="btn ghost" icon="download" label="Export" message="Portfolio export is mocked in this demo." />
-          <button className="btn accent" onClick={() => navigate({ name: 'grants' })}><Icon name="plus" size={12} /> New Grant</button>
-        </div>
+        {workstation && (
+          <div className="ph-actions">
+            <MockButton className="btn ghost" icon="download" label="Export" message="Portfolio export is mocked in this demo." />
+            <button className="btn accent" onClick={() => navigate({ name: 'grants' })}><Icon name="plus" size={12} /> New Grant</button>
+          </div>
+        )}
       </div>
 
       {/* Metric strip */}

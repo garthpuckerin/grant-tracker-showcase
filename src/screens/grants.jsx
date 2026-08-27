@@ -4,6 +4,7 @@ import { DATA } from '../data.js';
 import { fmt, Icon, Status, Utilization } from '../atoms.jsx';
 import { utilizationColor } from '../viz-color.js';
 import { useStore, useCurrentUser } from '../store.js';
+import { useWorkstation } from '../surface.js';
 import { visibleGrants } from '../scope.js';
 import { CreateGrantForm } from '../forms.jsx';
 import { useToast } from '../toast.jsx';
@@ -87,6 +88,7 @@ const SavedViews = ({ apply, activeId }) => {
 export const GrantsList = ({ navigate, search, route }) => {
   const allGrants = useStore((s) => s.grants);
   const user = useCurrentUser();
+  const workstation = useWorkstation();
   // RBAC read-scope: a PI's list holds only the awards they lead.
   const grants = visibleGrants(user, allGrants);
   const D = { ...DATA, grants };
@@ -148,7 +150,7 @@ export const GrantsList = ({ navigate, search, route }) => {
         </div>
         <div className="ph-actions">
           <SavedViews apply={applyView} activeId={activeView} />
-          <button className="btn accent" onClick={() => setShowForm(true)}><Icon name="plus" size={12} /> New Grant</button>
+          {workstation && <button className="btn accent" onClick={() => setShowForm(true)}><Icon name="plus" size={12} /> New Grant</button>}
         </div>
       </div>
 

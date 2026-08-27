@@ -69,7 +69,9 @@ test('ledger tables render as labeled cards, and a row opens a full-screen sheet
 })
 
 test('touch targets are at least 44px on phones', async ({ page }) => {
-  await enterApp(page, { name: 'dashboard' })
+  // Tasks keeps its page-head actions on phones (the dashboard's authoring
+  // buttons are workstation-only now — companion-surface contract).
+  await enterApp(page, { name: 'tasks' })
   await page.goto('/')
   const btn = page.locator('.page-head .btn').first()
   await expect(btn).toBeVisible()
@@ -80,4 +82,53 @@ test('touch targets are at least 44px on phones', async ({ page }) => {
   await expect(icon).toBeVisible()
   const ib = await icon.boundingBox()
   expect(ib.height).toBeGreaterThanOrEqual(44)
+})
+
+test('companion surface: authoring stays on the workstation; actions stay everywhere', async ({ page }) => {
+  // Dashboard: no New Grant / Export on a phone.
+  await enterApp(page, { name: 'dashboard' })
+  await page.goto('/')
+  await expect(page.locator('h1')).toContainText('Good morning')
+  await expect(page.getByRole('button', { name: 'New Grant' })).toHaveCount(0)
+  await expect(page.getByRole('button', { name: 'Export' })).toHaveCount(0)
+
+  // Budget tab: no ledger authoring — but the SIGNATURE mobile action
+  // (approve/deny a reallocation) works end to end.
+  await enterApp(page, { name: 'grant', id: '1', tab: 'budget' })
+  await page.goto('/')
+  await expect(page.getByRole('button', { name: 'Add line item' })).toHaveCount(0)
+  await expect(page.getByText('Ledger authoring is a workstation surface')).toBeVisible()
+  await page.getByRole('button', { name: 'Approve' }).click()
+  await expect(page.locator('.toast-flag')).toBeVisible()
+
+  // Documents: view-only library on phones.
+  await enterApp(page, { name: 'documents' })
+  await page.goto('/')
+  await expect(page.getByRole('button', { name: 'Upload' })).toHaveCount(0)
+  await expect(page.getByText('Uploads happen on the workstation build')).toBeVisible()
+})
+
+test('every navigation starts at the top; tab switches align the tab strip', async ({ page }) => {
+  await enterApp(page, { name: 'dashboard' })
+  await page.goto('/')
+  await expect(page.locator('.mtab')).toBeVisible()
+
+  // Scroll deep into the dashboard, then switch screens via the bottom bar —
+  // the new screen must start at the top, not inherit the offset.
+  await page.locator('.main').evaluate((el) => { el.scrollTop = el.scrollHeight })
+  await page.getByRole('navigation', { name: 'Primary (mobile)' }).getByRole('button', { name: /Grants/ }).click()
+  await expect(page.locator('h1')).toHaveText('Grants.')
+  const top = await page.locator('.main').evaluate((el) => el.scrollTop)
+  expect(top).toBeLessThanOrEqual(1)
+
+  // Grant detail: scroll to the bottom of Overview, switch to History — the
+  // tab strip lands at (or near) the top of the viewport.
+  await enterApp(page, { name: 'grant', id: '1' })
+  await page.goto('/')
+  await page.locator('.main').evaluate((el) => { el.scrollTop = el.scrollHeight })
+  await page.getByRole('button', { name: 'history', exact: true }).click()
+  await page.waitForTimeout(300)
+  const tabsTop = await page.locator('.tabs').evaluate((el) => Math.round(el.getBoundingClientRect().top))
+  expect(tabsTop).toBeGreaterThanOrEqual(-2)
+  expect(tabsTop).toBeLessThanOrEqual(140)
 })

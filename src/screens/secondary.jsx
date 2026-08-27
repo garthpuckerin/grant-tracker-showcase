@@ -16,6 +16,7 @@ import { shiftIso } from '../dates.js';
 // Where "Take action" lands per agent: the grant tab that owns the problem.
 import { ACTION_LABEL, insightRoute } from '../insight-actions.js';
 import { visibleGrants, scopeByGrant, scopeInsights } from '../scope.js';
+import { useWorkstation } from '../surface.js';
 
 export const Insights = ({ navigate }) => {
   const D = DATA;
@@ -23,6 +24,7 @@ export const Insights = ({ navigate }) => {
   // Live insights from the store — dismiss removes an insight here, in the
   // topbar bell, the dashboard widget, and the sidebar count at once.
   const user = useCurrentUser();
+  const insWorkstation = useWorkstation();
   // RBAC read-scope: a PI sees the signals on the awards they lead.
   const all = scopeInsights(user, useStore((s) => s.insights));
   // Run the agent sweep for real: ~1.2s of 'analyzing', then the store
@@ -70,7 +72,7 @@ export const Insights = ({ navigate }) => {
           </p>
         </div>
         <div className="ph-actions">
-          <MockButton className="btn ghost" icon="settings" label="Agent settings" />
+          {insWorkstation && <MockButton className="btn ghost" icon="settings" label="Agent settings" />}
           <button className="btn" onClick={runAgents} disabled={analyzing} aria-busy={analyzing}>
             <Icon name="play" size={12} /> {analyzing ? 'Analyzing…' : 'Run agents'}
           </button>
@@ -328,6 +330,7 @@ const reportData = (kind) => {
 
 const ReportViewer = ({ report, onClose }) => {
   const toast = useToast();
+  const repWorkstation = useWorkstation();
   if (!report) return null;
   const data = reportData(report.kind);
   const exportCsv = () => {
@@ -364,7 +367,7 @@ const ReportViewer = ({ report, onClose }) => {
         </div>
         <div style={{ display: 'flex', gap: 8 }}>
           <button className="btn accent" onClick={exportCsv}><Icon name="download" size={12} /> Export CSV</button>
-          <MockButton className="btn ghost" icon="settings" label="Schedule" message="Scheduled delivery is configured in the production build." />
+          {repWorkstation && <MockButton className="btn ghost" icon="settings" label="Schedule" message="Scheduled delivery is configured in the production build." />}
         </div>
       </div>
     </Drawer>
@@ -373,6 +376,7 @@ const ReportViewer = ({ report, onClose }) => {
 
 export const Reports = () => {
   const toast = useToast();
+  const repWorkstation = useWorkstation();
   const [openReport, setOpenReport] = React.useState(null);
   const reports = [
     { title: 'Portfolio Burn Rate', desc: 'Monthly expenditure across all active grants', kind: 'LINE', last: shiftIso('2026-05-15') },
@@ -392,8 +396,8 @@ export const Reports = () => {
         <p className="sub">Custom report builder, scheduled exports, and federal-form generators (SF-425, SF-270). Five chart primitives compose into any view.</p>
       </div>
       <div className="ph-actions">
-        <MockButton className="btn ghost" icon="download" label="Templates" />
-        <MockButton className="btn accent" icon="plus" label="Build report" />
+        {repWorkstation && <MockButton className="btn ghost" icon="download" label="Templates" />}
+        {repWorkstation && <MockButton className="btn accent" icon="plus" label="Build report" />}
       </div>
     </div>
 
@@ -461,6 +465,7 @@ export const Reports = () => {
 export const Documents = ({ navigate }) => {
   const toast = useToast();
   const docsUser = useCurrentUser();
+  const docsWorkstation = useWorkstation();
   // RBAC read-scope: the library shows the acting role's awards.
   const docs = scopeByGrant(docsUser, useStore((s) => s.documents));
   const D = { ...DATA, documents: docs };
@@ -478,7 +483,9 @@ export const Documents = ({ navigate }) => {
           <p className="sub">Award notices, budget justifications, narratives, agreements, and reports — searchable, typed, AI-tagged.</p>
         </div>
         <div className="ph-actions">
-          <button className="btn accent" onClick={() => setShowUpload(true)}><Icon name="plus" size={12} /> Upload</button>
+          {docsWorkstation
+            ? <button className="btn accent" onClick={() => setShowUpload(true)}><Icon name="plus" size={12} /> Upload</button>
+            : <span className="kicker">Uploads happen on the workstation build</span>}
         </div>
       </div>
       <div className="card">
@@ -532,6 +539,7 @@ export const SF425 = ({ navigate }) => {
   const filings = useStore((s) => s.filings);
   const [showNew, setShowNew] = React.useState(false);
   const sfUser = useCurrentUser();
+  const sfWorkstation = useWorkstation();
   // RBAC read-scope: PIs prepare filings on their own awards.
   const rows = filings
     .map((f) => ({ ...f, g: D.grants[f.gi] || D.grants[0] }))
@@ -546,8 +554,10 @@ export const SF425 = ({ navigate }) => {
           <p className="sub">Federal financial report packages — generated, validated against 2 CFR 200, and exported in OMB-conformant format. Open a filing to review the line-by-line report; every figure cross-foots to the grant’s budget and expenses.</p>
         </div>
         <div className="ph-actions">
-          <MockButton className="btn ghost" icon="download" label="Bundle export" message="Bundle export (all filings as OMB PDFs) is produced by the production build." />
-          <button className="btn accent" onClick={() => setShowNew(true)}><Icon name="plus" size={12} /> New filing</button>
+          {sfWorkstation && <MockButton className="btn ghost" icon="download" label="Bundle export" message="Bundle export (all filings as OMB PDFs) is produced by the production build." />}
+          {sfWorkstation
+            ? <button className="btn accent" onClick={() => setShowNew(true)}><Icon name="plus" size={12} /> New filing</button>
+            : <span className="kicker">Filing setup is a workstation surface</span>}
         </div>
       </div>
       {showNew && <NewFilingForm onClose={() => setShowNew(false)} onCreated={(m) => toast(m)} />}
@@ -859,6 +869,7 @@ export const Members = () => {
   const users = useStore((s) => s.users);
   const D = { ...DATA, users };
   const [showInvite, setShowInvite] = React.useState(false);
+  const memWorkstation = useWorkstation();
   const [role, setRole] = React.useState('ALL');
   const [query, setQuery] = React.useState('');
   const [selected, setSelected] = React.useState(null);
@@ -883,7 +894,9 @@ export const Members = () => {
           <p className="sub">Workspace members with role-based permissions — Admin, PI, Finance, Viewer. Select a member to view their effort allocation and contact details.</p>
         </div>
         <div className="ph-actions">
-          <button className="btn accent" onClick={() => setShowInvite(true)}><Icon name="plus" size={12} /> Invite</button>
+          {memWorkstation
+            ? <button className="btn accent" onClick={() => setShowInvite(true)}><Icon name="plus" size={12} /> Invite</button>
+            : <span className="kicker">Member administration is a workstation surface</span>}
           {showInvite && <InviteMemberForm onClose={() => setShowInvite(false)} onCreated={(m) => toast(m)} />}
         </div>
       </div>

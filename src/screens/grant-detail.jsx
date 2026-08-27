@@ -6,6 +6,7 @@ import { useStore, useCurrentUser, computeCategoryDeltas, decideReallocation, di
 import { insightColor } from '../viz-color.js';
 import { ACTION_TAB, ACTION_LABEL } from '../insight-actions.js';
 import { canViewGrant } from '../scope.js';
+import { useWorkstation } from '../surface.js';
 import {
   canRequestReallocation,
   canDecideReallocation,
@@ -51,6 +52,14 @@ export const GrantDetail = ({ navigate, route }) => {
   // Deep links (e.g. an insight's "Take action") may name the tab to open.
   const [tab, setTab] = React.useState(route.tab || 'overview');
   React.useEffect(() => { if (route.tab) setTab(route.tab); }, [route.tab, route.id]);
+  // Switching tabs mid-scroll used to leave the viewport wherever the last
+  // tab left it. Align the tab strip to the top so the new tab's content
+  // starts in view (skip the mount — deep links already start at the top).
+  const tabChanged = React.useRef(false);
+  React.useEffect(() => {
+    if (!tabChanged.current) { tabChanged.current = true; return; }
+    document.querySelector('.tabs')?.scrollIntoView({ block: 'start' });
+  }, [tab]);
   const [selectedYear, setSelectedYear] = React.useState(grant.year);
 
   // Line items added through the form (per-grant), merged onto the base set.
@@ -486,6 +495,7 @@ const BudgetTab = ({ grant, years, lineItems, selectedYear, setSelectedYear }) =
   const [showRealloc, setShowRealloc] = React.useState(false);
 
   const canRequest = canRequestReallocation(user, grant);
+  const workstation = useWorkstation();
   const requestBlocked = requestDeniedReason(user, grant);
 
   const grantReallocs = reallocations
@@ -551,10 +561,14 @@ const BudgetTab = ({ grant, years, lineItems, selectedYear, setSelectedYear }) =
             <div className="eyebrow" style={{ marginBottom: 6 }}>Line-item ledger · {years.find(y => y.n === selectedYear)?.fy}</div>
             <div className="card-title">Budget · Year {selectedYear}</div>
           </div>
-          <div className="ph-actions">
-            <button className="btn ghost" onClick={exportCsv}><Icon name="download" size={12} /> Export CSV</button>
-            <button className="btn accent" onClick={() => setShowForm(true)}><Icon name="plus" size={12} /> Add line item</button>
-          </div>
+          {workstation ? (
+            <div className="ph-actions">
+              <button className="btn ghost" onClick={exportCsv}><Icon name="download" size={12} /> Export CSV</button>
+              <button className="btn accent" onClick={() => setShowForm(true)}><Icon name="plus" size={12} /> Add line item</button>
+            </div>
+          ) : (
+            <span className="kicker">Ledger authoring is a workstation surface</span>
+          )}
         </div>
         <div className="table-scroll">
         <table className="ledger">
