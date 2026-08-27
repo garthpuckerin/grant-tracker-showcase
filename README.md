@@ -78,9 +78,10 @@ Honesty matters more than polish, so here's the exact boundary:
 | Aspect | In this public demo | In the private production build |
 |---|---|---|
 | **Data** | Mock fixtures, deterministically date-shifted so the portfolio always looks current | Postgres-backed awards (Prisma), org/tenant-scoped, with API keys + webhooks for integrations |
-| **RBAC** | **Real permission logic** (`rbac.js`) — the acting-role switch genuinely changes what's permitted | Real auth (Clerk) + server-side authorization with an audit log (tRPC audit router) |
+| **RBAC** | **Real permission logic** (`rbac.js` + `scope.js`) — the acting-role switch changes what's permitted AND what's visible: a PI sees only the awards they lead (lists, KPIs, charts, counts), with guarded deep links and admin surfaces removed | Real auth (Clerk) + server-side authorization enforced at the API layer, with an audit log (tRPC audit router) |
 | **Reallocation approval** | **Real** request → approve/deny state machine, separation of duties, and live budget re-derivation — in memory | The engine's AI budget agent generates reallocation *recommendations* today; this demo's approval workflow is the design spec for the engine's (in development) |
 | **SF-425** | **Real** cross-footing derivation from the ledger; validator blocks a report that doesn't tie out | Demo-led design — this cross-footing model specifies the engine's federal-reporting module (in development) |
+| **AI insights** | **Real interaction model** — signals act inline everywhere they render (contextual verbs), and the agent sweep re-derives the set, re-raising dismissed signals whose conditions persist; analysis cards compute from the live ledger | Multi-agent layer (budget / compliance / document agents + orchestrator) generates signals from real award data |
 | **Compliance** | Derived from one dataset (2 CFR 200 / NIH / NSF rules) so views can't diverge | ComplianceAssessment engine (2 CFR 200-aware); external registry connectivity (SAM.gov et al.) on the roadmap |
 | **Persistence** | In-memory / localStorage | Postgres (Prisma) with tenant scoping and an audit log |
 | **Email & notifications** | Explained in place — nothing is sent | In-app notifications + an agent notification service; email delivery on the roadmap |
