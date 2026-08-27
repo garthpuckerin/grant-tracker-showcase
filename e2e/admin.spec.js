@@ -33,8 +33,9 @@ test('a report card opens a real viewer with data and a CSV export', async ({ pa
 test('SF-425 certification is RBAC-gated: a PI is blocked, Finance certifies, the index shows COMPLETE', async ({ page }) => {
   await enterApp(page, { name: 'sf425' })
   await page.goto('/')
-  // Open the in-progress FY25 ANNUAL filing for the NSF award.
-  await page.locator('table.ledger tbody tr').filter({ hasText: 'FY25 ANNUAL' }).first().click()
+  // Open the in-progress ANNUAL filing for the NSF award (period label is
+  // derived from the due date, so match the shape, not a literal FY).
+  await page.locator('table.ledger tbody tr').filter({ hasText: /FY\d{2} ANNUAL/ }).first().click()
   await expect(page.getByRole('heading', { name: /SF-425/ })).toBeVisible()
   await expect(page.getByText(/Ties out/i)).toBeVisible()
 
@@ -48,7 +49,7 @@ test('SF-425 certification is RBAC-gated: a PI is blocked, Finance certifies, th
   await page.getByRole('button', { name: /Certify & submit/ }).click()
   await expect(page.getByText(/Certified · Lisa Thompson/)).toBeVisible()
   await page.getByRole('button', { name: /All SF-425 filings/ }).click()
-  const row = page.locator('table.ledger tbody tr').filter({ hasText: 'FY25 ANNUAL' }).first()
+  const row = page.locator('table.ledger tbody tr').filter({ hasText: /FY\d{2} ANNUAL/ }).first()
   await expect(row).toContainText('Complete')
   await expect(row.getByRole('button', { name: 'View →' })).toBeVisible()
 })

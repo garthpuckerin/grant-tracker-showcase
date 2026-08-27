@@ -159,3 +159,27 @@ test('insight agent tiles and compliance framework rows filter their lists', asy
   await page.locator('tr.row-h').filter({ hasText: 'Institutional' }).click()
   await expect(page.getByRole('button', { name: 'Resolve' })).toHaveCount(3)
 })
+
+test('white-glove: surfaces that look clickable act — insight rows, budget lines, report rows', async ({ page }) => {
+  // An insight row (not just its buttons) deep-links to the related grant.
+  await enterApp(page, { name: 'insights' })
+  await page.goto('/')
+  await page.locator('.insight-row').first().click()
+  await expect(page.locator('.tabs button.on')).toBeVisible()
+
+  // A budget line row opens the reallocation flow prefilled with its category.
+  await enterApp(page, { name: 'grant', id: '1', tab: 'budget' })
+  await page.goto('/')
+  await page.getByRole('button', { name: 'budget', exact: true }).click()
+  await page.locator('table.ledger tbody tr.row-h').first().click()
+  const dlg = page.getByRole('dialog')
+  await expect(dlg).toBeVisible()
+  await expect(dlg.locator('#f-fromCat')).toHaveValue('PERSONNEL')
+  await page.keyboard.press('Escape')
+
+  // A scheduled-report row explains its production behavior (demo-scoped).
+  await enterApp(page, { name: 'reports' })
+  await page.goto('/')
+  await page.locator('table.ledger tbody tr.row-h').first().click()
+  await expect(page.locator('.toast-flag')).toContainText('read-only')
+})

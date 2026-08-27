@@ -95,7 +95,11 @@ export const Insights = ({ navigate }) => {
           const grant = D.grants.find(g => g.id === i.grantId);
           const color = insightColor(i);
           return (
-            <div key={i.id} className="insight-row" style={{
+            <div key={i.id} className="insight-row" role="button" tabIndex={0}
+              aria-label={`Take action — ${i.title}`}
+              onClick={() => takeAction(i, grant)}
+              onKeyDown={(e) => { if (e.key === 'Enter') takeAction(i, grant); }}
+              style={{
               display: 'grid',
               gridTemplateColumns: '4px 140px 1fr auto',
               gap: 18,
@@ -104,6 +108,7 @@ export const Insights = ({ navigate }) => {
               background: 'var(--surface)',
               borderRadius: 2,
               alignItems: 'flex-start',
+              cursor: 'pointer',
             }}>
               <div style={{ width: 4, alignSelf: 'stretch', background: color }}></div>
               <div>
@@ -117,13 +122,13 @@ export const Insights = ({ navigate }) => {
                   <div style={{ marginTop: 12, display: 'flex', gap: 12, fontSize: 11 }} className="mono">
                     <span style={{ color: 'var(--ink-3)' }}>RELATED · {grant.agencyShort}</span>
                     <span>{grant.number}</span>
-                    <button className="btn-link" onClick={() => navigate({ name: 'grant', id: grant.id, grant })}>Open →</button>
+                    <button className="btn-link" onClick={(e) => { e.stopPropagation(); navigate({ name: 'grant', id: grant.id, grant }); }}>Open →</button>
                   </div>
                 )}
               </div>
               <div className="insight-actions" style={{ display: 'flex', flexDirection: 'column', gap: 6 }}>
-                <button className="btn ghost" style={{ height: 28, fontSize: 11 }} onClick={() => dismiss(i)}>Dismiss</button>
-                <button className="btn" style={{ height: 28, fontSize: 11 }} onClick={() => takeAction(i, grant)}>Take action</button>
+                <button className="btn ghost" style={{ height: 28, fontSize: 11 }} onClick={(e) => { e.stopPropagation(); dismiss(i); }}>Dismiss</button>
+                <button className="btn" style={{ height: 28, fontSize: 11 }} onClick={(e) => { e.stopPropagation(); takeAction(i, grant); }}>Take action</button>
               </div>
             </div>
           );
@@ -406,12 +411,12 @@ export const Reports = () => {
         </thead>
         <tbody>
           {[
-            ['Weekly Portfolio Burn', 'WEEKLY · Mon 08:00 ET', 'PDF, CSV', 'CFO, Research VP', shiftIso('2026-05-19')],
-            ['Monthly Budget Variance', 'MONTHLY · 1st', 'XLSX', 'PI distribution list', shiftIso('2026-06-01')],
-            ['Quarterly Compliance Audit', 'QUARTERLY', 'PDF', 'Internal Audit, Compliance', shiftIso('2026-07-01')],
-            ['Annual SF-425 Bundle', 'ANNUAL', 'PDF, OMB form', 'Sponsored Programs', shiftIso('2026-12-15')],
+            ['Weekly Portfolio Burn', 'WEEKLY · Mon 08:00 ET', 'PDF, CSV', 'CFO, Research VP', nextRun('weekly')],
+            ['Monthly Budget Variance', 'MONTHLY · 1st', 'XLSX', 'PI distribution list', nextRun('monthly')],
+            ['Quarterly Compliance Audit', 'QUARTERLY', 'PDF', 'Internal Audit, Compliance', nextRun('quarterly')],
+            ['Annual SF-425 Bundle', 'ANNUAL', 'PDF, OMB form', 'Sponsored Programs', nextRun('annual')],
           ].map((r, i) => (
-            <tr key={i} className="row-h">
+            <tr key={i} className="row-h" onClick={() => toast(`“${r[0]}” is generated and delivered on schedule by the production report service — this demo registry is read-only.`, 'indigo', 'Demo')}>
               <td className="ttl">{r[0]}</td>
               <td className="mono" style={{ fontSize: 11, color: 'var(--ink-3)' }}>{r[1]}</td>
               <td className="mono" style={{ fontSize: 11 }}>{r[2]}</td>
@@ -593,8 +598,20 @@ function buildSF425(grant) {
 
 const money0 = (n) => '$' + Math.round(n).toLocaleString('en-US');
 
+// Next scheduled run for the Reports registry, derived from the real clock so
+// each date actually obeys its cadence label (next Monday, next 1st, …).
+const nextRun = (cadence) => {
+  const d = new Date(); d.setHours(0, 0, 0, 0);
+  if (cadence === 'weekly') { const add = ((8 - d.getDay()) % 7) || 7; d.setDate(d.getDate() + add); }
+  else if (cadence === 'monthly') { d.setMonth(d.getMonth() + 1, 1); }
+  else if (cadence === 'quarterly') { d.setMonth(Math.floor(d.getMonth() / 3) * 3 + 3, 1); }
+  else { d.setMonth(11, 15); if (d < new Date()) d.setFullYear(d.getFullYear() + 1); }
+  const y = d.getFullYear(), m = String(d.getMonth() + 1).padStart(2, '0'), day = String(d.getDate()).padStart(2, '0');
+  return `${y}-${m}-${day}`;
+};
+
 const SfRow = ({ line, label, value, strong, derived }) => (
-  <tr className="row-h">
+  <tr>
     <td className="mono" style={{ fontSize: 11, color: 'var(--ink-3)', width: 44 }}>{line}</td>
     <td style={{ fontSize: 13, fontWeight: strong ? 600 : 400 }}>
       {label}{derived && <span className="mono" style={{ fontSize: 10, color: 'var(--ink-3)', marginLeft: 8 }}>{derived}</span>}
@@ -650,7 +667,7 @@ export const SF425Detail = ({ navigate, route }) => {
 
       <div className="page-head">
         <div>
-          <div className="eyebrow">OMB No. 4040-0014 · {route.period} · {route.type} · exp. 02/28/2025</div>
+          <div className="eyebrow">OMB No. 4040-0014 · {route.period} · {route.type}</div>
           <h1>SF-425 · {grant.agencyShort} {grant.number}</h1>
           <p className="sub">Federal Financial Report for {grant.title}. Recipient: State University Research Office · SAM.gov UEI on file. Every dollar figure is derived from this award’s budget and expenditures.</p>
         </div>
@@ -708,7 +725,7 @@ export const SF425Detail = ({ navigate, route }) => {
                 <tr><th>Type of Rate</th><th>Rate</th><th>Base</th><th>Period</th><th className="r">Amount Charged</th><th className="r">Federal Share</th></tr>
               </thead>
               <tbody>
-                <tr className="row-h">
+                <tr>
                   <td className="mono" style={{ fontSize: 12 }}>Predetermined</td>
                   <td className="num r">47.5%</td>
                   <td className="mono" style={{ fontSize: 11 }}>MTDC</td>
@@ -1215,7 +1232,7 @@ export const Settings = () => {
             </thead>
             <tbody>
               {SPONSOR_PROFILES.map((p) => (
-                <tr key={p.sponsor} className="row-h">
+                <tr key={p.sponsor} className="row-h" onClick={() => toast(`${p.sponsor} sponsor-policy editing lives in the production admin console — profiles here are read-only reference.`, 'indigo', 'Demo')}>
                   <td className="mono" style={{ fontWeight: 600 }}>{p.sponsor}</td>
                   <td>{p.policyBasis}</td>
                   <td className="muted">{p.reportingCadence}</td>
@@ -1258,7 +1275,7 @@ export const Settings = () => {
             </thead>
             <tbody>
               {AUDIT_RULES.map((r) => (
-                <tr key={r.rule} className="row-h">
+                <tr key={r.rule}>
                   <td className="mono">{r.rule}</td>
                   <td>{r.check}</td>
                   <td className="mono" style={{ color: r.severity === 'High' ? 'var(--alert)' : 'var(--ink-3)' }}>{r.severity}</td>

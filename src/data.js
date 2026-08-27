@@ -73,6 +73,14 @@ const DATA = (() => {
     { id: 'u5', name: 'Lisa Thompson', email: 'finance@university.edu', role: 'FINANCE', initials: 'LT' },
   ];
 
+  // AUTHORING INVARIANT (enforced by data-coherence.test.mjs): every fixture
+  // date is anchor-relative — shiftIso() re-anchors it onto the real "today",
+  // preserving each date's distance from the 2026-05-17 anchor forever. An
+  // ACTIVE grant's period must therefore STRADDLE the anchor, its labeled
+  // `year` must match the years elapsed at the anchor, and end − start must
+  // equal `totalYears`. Violations render as impossible UI on some viewing
+  // date (an ACTIVE award showing "-259 d" remaining — the shipped defect
+  // that motivated the invariant).
   const grants = [
     {
       id: '1',
@@ -82,7 +90,7 @@ const DATA = (() => {
       agencyShort: 'NSF',
       status: 'ACTIVE',
       year: 2, totalYears: 5,
-      start: shiftIso('2024-01-01'), end: shiftIso('2028-12-31'),
+      start: shiftIso('2024-12-04'), end: shiftIso('2029-12-03'),
       pi: users[1],
       // Grant-level `spent` is reconciled to equal Σ years[].spent (262,500 =
       // 175,000 Y1 + 87,500 Y2). The Year-2 line items below independently sum
@@ -104,24 +112,36 @@ const DATA = (() => {
         { cat: 'INDIRECT',   desc: 'F&A indirect (47.5% on MTDC)',             budgeted: 25000,  spent: 8750,  encumbered: 2500 },
       ],
     },
-    { id: '2',  title: 'Sustainable Energy Research Initiative', number: 'DOE-ENERGY-2023-042', agency: 'Department of Energy', agencyShort: 'DOE', status: 'ACTIVE',  year: 3, totalYears: 3, start:shiftIso('2023-03-01'), end:shiftIso('2026-02-28'), pi: users[2], budget: 890000, spent: 694200 },
-    { id: '3',  title: 'Cybersecurity in Healthcare Systems',    number: 'NIH-CYBER-2024-018',  agency: 'National Institutes of Health', agencyShort: 'NIH', status: 'ACTIVE',  year: 1, totalYears: 3, start:shiftIso('2024-06-01'), end:shiftIso('2027-05-31'), pi: users[3], budget: 750000, spent: 90000 },
-    { id: '4',  title: 'Climate Change Impact on Urban Planning',number: 'EPA-CLIMATE-2022-089',agency: 'Environmental Protection Agency', agencyShort: 'EPA', status: 'ACTIVE', year: 3, totalYears: 3, start:shiftIso('2022-09-01'), end:shiftIso('2025-08-31'), pi: users[1], budget: 525000, spent: 498750 },
-    { id: '5',  title: 'Machine Learning for Drug Discovery',    number: 'FDA-ML-2024-007',     agency: 'Food and Drug Administration', agencyShort: 'FDA', status: 'ACTIVE', year: 1, totalYears: 2, start:shiftIso('2024-02-01'), end:shiftIso('2026-01-31'), pi: users[2], budget: 680000, spent: 190400 },
-    { id: '6',  title: 'Rural Broadband Infrastructure Study',   number: 'USDA-BROADBAND-2023-156', agency: 'Department of Agriculture', agencyShort: 'USDA', status: 'ACTIVE', year: 2, totalYears: 2, start:shiftIso('2023-10-01'), end:shiftIso('2025-09-30'), pi: users[3], budget: 420000, spent: 281400 },
-    { id: '7',  title: 'Quantum Computing Applications in Finance', number: 'NSF-QUANTUM-2025-203', agency: 'National Science Foundation', agencyShort: 'NSF', status: 'DRAFT', year: 1, totalYears: 4, start:shiftIso('2025-01-01'), end:shiftIso('2028-12-31'), pi: users[1], budget: 1100000, spent: 0 },
-    { id: '8',  title: 'Renewable Energy Storage Solutions',     number: 'DOE-STORAGE-2024-091', agency: 'Department of Energy', agencyShort: 'DOE', status: 'ACTIVE', year: 1, totalYears: 2, start:shiftIso('2024-04-01'), end:shiftIso('2026-03-31'), pi: users[2], budget: 380000, spent: 68400 },
-    { id: '9',  title: 'Biodiversity Conservation Through Technology', number: 'NOAA-BIO-2023-127', agency: 'NOAA', agencyShort: 'NOAA', status: 'ACTIVE', year: 2, totalYears: 3, start:shiftIso('2023-07-01'), end:shiftIso('2026-06-30'), pi: users[3], budget: 620000, spent: 359600 },
-    { id: '10', title: 'Advanced Materials for Space Exploration', number: 'NASA-MATERIALS-2024-034', agency: 'NASA', agencyShort: 'NASA', status: 'ACTIVE', year: 1, totalYears: 3, start:shiftIso('2024-08-01'), end:shiftIso('2027-07-31'), pi: users[1], budget: 940000, spent: 75200 },
-    { id: '11', title: 'AI Ethics in Educational Technology',     number: 'ED-AI-ETHICS-2024-012', agency: 'Department of Education', agencyShort: 'ED', status: 'ACTIVE', year: 2, totalYears: 2, start:shiftIso('2024-01-15'), end:shiftIso('2025-12-31'), pi: users[2], budget: 290000, spent: 208800 },
-    { id: '12', title: 'Digital Health Innovation Platform',      number: 'HHS-DIGITAL-2023-098', agency: 'Health & Human Services', agencyShort: 'HHS', status: 'ACTIVE', year: 2, totalYears: 2, start:shiftIso('2023-11-01'), end:shiftIso('2025-10-31'), pi: users[3], budget: 510000, spent: 428400 },
-    { id: '13', title: 'Smart Cities Infrastructure Research',    number: 'DOT-SMART-2024-067', agency: 'Department of Transportation', agencyShort: 'DOT', status: 'ACTIVE', year: 1, totalYears: 3, start:shiftIso('2024-03-01'), end:shiftIso('2027-02-28'), pi: users[1], budget: 775000, spent: 170500 },
-    { id: '14', title: 'Advanced Manufacturing Automation',       number: 'NIST-AUTO-2023-145', agency: 'NIST', agencyShort: 'NIST', status: 'ACTIVE', year: 2, totalYears: 2, start:shiftIso('2023-05-01'), end:shiftIso('2025-04-30'), pi: users[2], budget: 350000, spent: 311500 },
-    { id: '15', title: 'Ocean Pollution Monitoring Network',      number: 'NOAA-OCEAN-2024-078', agency: 'NOAA', agencyShort: 'NOAA', status: 'ACTIVE', year: 1, totalYears: 2, start:shiftIso('2024-05-01'), end:shiftIso('2026-04-30'), pi: users[3], budget: 465000, spent: 69750 },
+    { id: '2',  title: 'Sustainable Energy Research Initiative', number: 'DOE-ENERGY-2023-042', agency: 'Department of Energy', agencyShort: 'DOE', status: 'ACTIVE',  year: 3, totalYears: 3, start:shiftIso('2023-11-15'), end:shiftIso('2026-11-14'), pi: users[2], budget: 890000, spent: 694200 },
+    { id: '3',  title: 'Cybersecurity in Healthcare Systems',    number: 'NIH-CYBER-2024-018',  agency: 'National Institutes of Health', agencyShort: 'NIH', status: 'ACTIVE',  year: 1, totalYears: 3, start:shiftIso('2025-07-01'), end:shiftIso('2028-06-30'), pi: users[3], budget: 750000, spent: 90000 },
+    { id: '4',  title: 'Climate Change Impact on Urban Planning',number: 'EPA-CLIMATE-2022-089',agency: 'Environmental Protection Agency', agencyShort: 'EPA', status: 'ACTIVE', year: 3, totalYears: 3, start:shiftIso('2023-08-01'), end:shiftIso('2026-07-31'), pi: users[1], budget: 525000, spent: 498750 },
+    { id: '5',  title: 'Machine Learning for Drug Discovery',    number: 'FDA-ML-2024-007',     agency: 'Food and Drug Administration', agencyShort: 'FDA', status: 'ACTIVE', year: 1, totalYears: 2, start:shiftIso('2025-08-01'), end:shiftIso('2027-07-31'), pi: users[2], budget: 680000, spent: 190400 },
+    { id: '6',  title: 'Rural Broadband Infrastructure Study',   number: 'USDA-BROADBAND-2023-156', agency: 'Department of Agriculture', agencyShort: 'USDA', status: 'ACTIVE', year: 2, totalYears: 2, start:shiftIso('2024-10-01'), end:shiftIso('2026-09-30'), pi: users[3], budget: 420000, spent: 281400 },
+    { id: '7',  title: 'Quantum Computing Applications in Finance', number: 'NSF-QUANTUM-2025-203', agency: 'National Science Foundation', agencyShort: 'NSF', status: 'DRAFT', year: 1, totalYears: 4, start:shiftIso('2026-10-01'), end:shiftIso('2030-09-30'), pi: users[1], budget: 1100000, spent: 0 },
+    { id: '8',  title: 'Renewable Energy Storage Solutions',     number: 'DOE-STORAGE-2024-091', agency: 'Department of Energy', agencyShort: 'DOE', status: 'ACTIVE', year: 1, totalYears: 2, start:shiftIso('2025-09-01'), end:shiftIso('2027-08-31'), pi: users[2], budget: 380000, spent: 68400 },
+    { id: '9',  title: 'Biodiversity Conservation Through Technology', number: 'NOAA-BIO-2023-127', agency: 'NOAA', agencyShort: 'NOAA', status: 'ACTIVE', year: 2, totalYears: 3, start:shiftIso('2024-11-10'), end:shiftIso('2027-11-09'), pi: users[3], budget: 620000, spent: 359600 },
+    { id: '10', title: 'Advanced Materials for Space Exploration', number: 'NASA-MATERIALS-2024-034', agency: 'NASA', agencyShort: 'NASA', status: 'ACTIVE', year: 1, totalYears: 3, start:shiftIso('2025-08-15'), end:shiftIso('2028-08-14'), pi: users[1], budget: 940000, spent: 75200 },
+    { id: '11', title: 'AI Ethics in Educational Technology',     number: 'ED-AI-ETHICS-2024-012', agency: 'Department of Education', agencyShort: 'ED', status: 'ACTIVE', year: 2, totalYears: 2, start:shiftIso('2024-09-15'), end:shiftIso('2026-09-14'), pi: users[2], budget: 290000, spent: 208800 },
+    { id: '12', title: 'Digital Health Innovation Platform',      number: 'HHS-DIGITAL-2023-098', agency: 'Health & Human Services', agencyShort: 'HHS', status: 'ACTIVE', year: 2, totalYears: 2, start:shiftIso('2024-08-01'), end:shiftIso('2026-07-31'), pi: users[3], budget: 510000, spent: 428400 },
+    { id: '13', title: 'Smart Cities Infrastructure Research',    number: 'DOT-SMART-2024-067', agency: 'Department of Transportation', agencyShort: 'DOT', status: 'ACTIVE', year: 1, totalYears: 3, start:shiftIso('2025-10-15'), end:shiftIso('2028-10-14'), pi: users[1], budget: 775000, spent: 170500 },
+    { id: '14', title: 'Advanced Manufacturing Automation',       number: 'NIST-AUTO-2023-145', agency: 'NIST', agencyShort: 'NIST', status: 'ACTIVE', year: 2, totalYears: 2, start:shiftIso('2024-07-01'), end:shiftIso('2026-06-30'), pi: users[2], budget: 350000, spent: 311500 },
+    { id: '15', title: 'Ocean Pollution Monitoring Network',      number: 'NOAA-OCEAN-2024-078', agency: 'NOAA', agencyShort: 'NOAA', status: 'ACTIVE', year: 1, totalYears: 2, start:shiftIso('2025-11-01'), end:shiftIso('2027-10-31'), pi: users[3], budget: 465000, spent: 69750 },
   ];
 
   // Compute spent% for cards
   grants.forEach(g => g.pct = g.budget > 0 ? g.spent / g.budget : 0);
+
+  // FY labels and per-year award numbers on the flagship grant are DERIVED
+  // from the (re-anchored) start date, so the multi-year timeline always
+  // agrees with the period of performance as the calendar advances.
+  {
+    const y0 = new Date(grants[0].start + 'T00:00:00').getFullYear();
+    grants[0].years = grants[0].years.map((y) => ({
+      ...y,
+      fy: `FY${String(y0 + y.n - 1).slice(-2)}`,
+      number: `NSF-EDU-${y0 + y.n - 1}`,
+    }));
+  }
 
   const tasks = [
     // PINNED OVERDUE: two non-complete tasks are anchored a few days in the PAST
@@ -137,12 +157,12 @@ const DATA = (() => {
     { id: 't6', title: 'EPA Final Annual Report',          desc: 'Programmatic + SF-425 fed financial', due: isoFromToday(-1), status: 'IN_PROGRESS', priority: 'HIGH', grantId: '4', assigned: users[1] },
     { id: 't7', title: 'Subaward Compliance Audit',        desc: 'USDA pass-through to State A&M', due: shiftIso('2026-06-22'), status: 'OPEN', priority: 'MEDIUM', grantId: '6', assigned: users[3] },
     { id: 't8', title: 'Draft Quantum NSF Proposal',       desc: 'Specific aims + biosketch refresh', due: shiftIso('2026-07-04'), status: 'IN_PROGRESS', priority: 'HIGH', grantId: '7', assigned: users[1] },
-    { id: 't9', title: 'Travel Pre-Approval — APS March',  desc: '3 conference attendees, OK 4710', due: shiftIso('2026-05-30'), status: 'OPEN', priority: 'LOW', grantId: '2', assigned: users[2] },
+    { id: 't9', title: 'Travel Pre-Approval — MRS Fall Meeting', desc: '3 conference attendees, OK 4710', due: shiftIso('2026-05-30'), status: 'OPEN', priority: 'LOW', grantId: '2', assigned: users[2] },
   ];
 
   const documents = [
     { id: 'd1', name: 'NSF Award Notice — FY25.pdf',         type: 'AWARD',     size: '412 KB', date: shiftIso('2025-01-08'), by: users[0], grantId: '1' },
-    { id: 'd2', name: 'Budget Justification — Year 2.docx',  type: 'BUDGET',    size: '88 KB',  date: shiftIso('2025-01-12'), by: users[1], grantId: '1' },
+    { id: 'd2', name: 'Budget Justification — Year 2.docx',  type: 'BUDGET',    size: '88 KB',  date: shiftIso('2025-11-20'), by: users[1], grantId: '1' },
     { id: 'd3', name: 'Project Narrative.pdf',               type: 'NARRATIVE', size: '1.2 MB', date: shiftIso('2024-10-22'), by: users[1], grantId: '1' },
     { id: 'd4', name: 'Subaward Agreement — State A&M.pdf',  type: 'AGREEMENT', size: '624 KB', date: shiftIso('2025-02-19'), by: users[0], grantId: '1' },
     { id: 'd5', name: 'IRB Approval Letter.pdf',             type: 'COMPLIANCE',size: '128 KB', date: shiftIso('2024-12-04'), by: users[4], grantId: '1' },
@@ -176,13 +196,26 @@ const DATA = (() => {
   // ── SF-425 filings register ──────────────────────────────────────────────
   // `gi` indexes `grants`. Status moves OPEN → IN_PROGRESS → COMPLETE when an
   // authorized official certifies the report (store.certifyFiling, RBAC-gated).
+  // Period labels are DERIVED from the due date (calendar-fiscal convention,
+  // dates.js): an Annual report covers the prior FY, a Quarterly the prior
+  // quarter, and a Final the FY it is due in (due ≈ 120 days after period end).
+  const filingPeriod = (type, dueIso) => {
+    const dd = new Date(dueIso.slice(0, 10) + 'T00:00:00');
+    const fy = (y) => `FY${String(y).slice(-2)}`;
+    if (type === 'Quarterly') {
+      const q = Math.floor(dd.getMonth() / 3) + 1;
+      return q === 1 ? `${fy(dd.getFullYear() - 1)} Q4` : `${fy(dd.getFullYear())} Q${q - 1}`;
+    }
+    if (type === 'Annual') return `${fy(dd.getFullYear() - 1)} ANNUAL`;
+    return `${fy(dd.getFullYear())} FINAL`;
+  };
   const filings = [
-    { id: 'sf1', gi: 0, period: 'FY25 ANNUAL', type: 'Annual',    status: 'IN_PROGRESS', due: shiftIso('2026-06-15') },
-    { id: 'sf2', gi: 1, period: 'FY25 Q4',     type: 'Quarterly', status: 'OPEN',        due: shiftIso('2026-05-30') },
-    { id: 'sf3', gi: 3, period: 'FY25 FINAL',  type: 'Final',     status: 'IN_PROGRESS', due: shiftIso('2026-06-12') },
-    { id: 'sf4', gi: 2, period: 'FY24 ANNUAL', type: 'Annual',    status: 'COMPLETE',    due: shiftIso('2026-03-01'), certifiedBy: 'u5', certifiedAt: shiftIso('2026-02-24') },
-    { id: 'sf5', gi: 5, period: 'FY25 FINAL',  type: 'Final',     status: 'OPEN',        due: shiftIso('2026-09-30') },
-  ];
+    { id: 'sf1', gi: 0, type: 'Annual',    status: 'IN_PROGRESS', due: shiftIso('2026-06-15') },
+    { id: 'sf2', gi: 1, type: 'Quarterly', status: 'OPEN',        due: shiftIso('2026-07-30') },
+    { id: 'sf3', gi: 3, type: 'Final',     status: 'OPEN',        due: shiftIso('2026-11-28') },
+    { id: 'sf4', gi: 8, type: 'Annual',    status: 'COMPLETE',    due: shiftIso('2026-03-01'), certifiedBy: 'u5', certifiedAt: shiftIso('2026-02-24') },
+    { id: 'sf5', gi: 5, type: 'Final',     status: 'OPEN',        due: shiftIso('2027-01-28') },
+  ].map((f) => ({ ...f, period: filingPeriod(f.type, f.due) }));
 
   // Spending data by month — a trailing-12 series. The VALUES preserve their
   // original oldest→newest order; the month LABELS are re-derived so the series
@@ -206,15 +239,15 @@ const DATA = (() => {
   });
 
   const insights = [
-    { id: 'i1', kind: 'alert',  agent: 'BUDGET',     title: 'EPA Climate grant projected to overspend Year 3 by 4.8%', body: 'Personnel encumbrances exceed remaining award by $25,250. Reallocation from Equipment recommended before May 28.', grantId: '4', severity: 'HIGH' },
-    { id: 'i2', kind: 'accent', agent: 'DEADLINE',   title: 'NSF Q1 Progress Report due in 5 days', body: 'Programmatic narrative draft is 62% complete. Budget variance section requires PI sign-off.', grantId: '1', severity: 'MEDIUM' },
+    { id: 'i1', kind: 'alert',  agent: 'BUDGET',     title: 'EPA Climate grant projected to overspend Year 3 by 4.8%', body: 'Personnel encumbrances exceed remaining award by $25,250. Reallocation from Equipment recommended within the next two weeks.', grantId: '4', severity: 'HIGH' },
+    { id: 'i2', kind: 'accent', agent: 'DEADLINE',   title: 'NSF Q1 Progress Report is 3 days past due', body: 'Programmatic narrative draft is 62% complete. Budget variance section still requires PI sign-off.', grantId: '1', severity: 'MEDIUM' },
     { id: 'i3', kind: 'indigo', agent: 'COMPLIANCE', title: '2 CFR 200 §200.430 — time & effort certification overdue', body: '2 PI certifications for FY25 H1 have not been submitted. Required for federal audit readiness.', grantId: '1', severity: 'MEDIUM' },
     { id: 'i4', kind: 'fund',   agent: 'OPTIMIZE',   title: 'NIH Cyber grant trending 12% under plan', body: 'Underspend driven by delayed equipment delivery. Consider pre-purchasing FY26 supplies under §1903 carry-forward.', grantId: '3', severity: 'LOW' },
     { id: 'i5', kind: 'alert',  agent: 'BUDGET',     title: 'DOE Energy grant Year 3 burn rate exceeds plan by 8%', body: 'Equipment line at $35K above budget pace. Recommend mid-year amendment to the DOE financial officer.', grantId: '2', severity: 'HIGH' },
     { id: 'i6', kind: 'indigo', agent: 'WRITER',     title: 'Quantum Computing proposal — specific aims draft ready', body: 'Auto-generated draft of Specific Aims 1–3 synthesized from related literature and prior aims. Pending PI revision.', grantId: '7', severity: 'LOW' },
     { id: 'i7', kind: 'accent', agent: 'DEADLINE',   title: 'NIST Manufacturing — annual report due in 18 days', body: 'Programmatic and budget sections from prior year flagged for reuse. Estimated 4 hours to complete.', grantId: '14', severity: 'MEDIUM' },
     { id: 'i8', kind: 'fund',   agent: 'OPTIMIZE',   title: 'Subaward consolidation opportunity', body: 'Three active grants share State A&M subrecipient. Consolidating invoicing would reduce admin overhead 14 hrs/quarter.', grantId: null, severity: 'LOW' },
-    { id: 'i9', kind: 'indigo', agent: 'COMPLIANCE', title: 'NIH Public Access Policy — 1 publication non-compliant', body: 'Manuscript published in Cybersecurity Research Letters not deposited to PMC. 90-day window closes Jul 8.', grantId: '3', severity: 'MEDIUM' },
+    { id: 'i9', kind: 'indigo', agent: 'COMPLIANCE', title: 'NIH Public Access Policy — 1 publication non-compliant', body: 'Manuscript published in Cybersecurity Research Letters not deposited to PMC. The 90-day deposit window closes in 19 days.', grantId: '3', severity: 'MEDIUM' },
   ];
 
   // ── Compliance — single source of truth ──────────────────────────────────

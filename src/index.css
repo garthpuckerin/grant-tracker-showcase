@@ -770,7 +770,9 @@ button { font-family: inherit; cursor: pointer; }
   vertical-align: middle;
 }
 .ledger tr:last-child td { border-bottom: 0; }
-.ledger tr.row-h:hover td { background: var(--paper-tint); cursor: pointer; }
+.ledger tr.row-h { cursor: pointer; }
+.ledger tr.row-h:hover td { background: var(--paper-tint); }
+.insight-row { cursor: pointer; }
 .ledger .num {
   font-family: var(--font-mono);
   font-variant-numeric: tabular-nums;

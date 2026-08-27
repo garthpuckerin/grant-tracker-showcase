@@ -127,11 +127,13 @@ export const GrantDetail = ({ navigate, route }) => {
         <div className="g-dense" style={{ display: 'grid', gridTemplateColumns: 'repeat(6, 1fr)', gap: 0, marginTop: 28, border: '1px solid var(--rule)', background: 'var(--surface)' }}>
           {[
             { lbl: 'Principal Investigator', val: grant.pi.name, mono: false },
-            { lbl: 'Period of Performance',  val: `${fmt.shortDate(grant.start.slice(0,10))} – ${fmt.shortDate(grant.end.slice(0,10))}`, mono: true },
+            { lbl: 'Period of Performance',  val: `${fmt.monthYear(grant.start.slice(0,10))} – ${fmt.monthYear(grant.end.slice(0,10))}`, mono: true },
             { lbl: 'Current Year',           val: `${grant.year} of ${grant.totalYears}`, mono: true },
             { lbl: 'Total Award',            val: fmt.money(grant.budget, { compact: true }), mono: true },
             { lbl: 'Expended',               val: `${fmt.money(grant.spent, { compact: true })} · ${fmt.pct(grant.pct, 0)}`, mono: true },
-            { lbl: 'Days Remaining',         val: `${fmt.daysUntil(grant.end.slice(0,10))} d`, mono: true },
+            grant.status === 'DRAFT'
+              ? { lbl: 'Proposed Start', val: `in ${fmt.daysUntil(grant.start.slice(0,10))} d`, mono: true }
+              : { lbl: 'Days Remaining', val: `${fmt.daysUntil(grant.end.slice(0,10))} d`, mono: true },
           ].map((m, i) => (
             <div key={i} style={{ padding: '14px 18px', borderRight: i < 5 ? '1px solid var(--rule)' : 'none' }}>
               <div className="kicker" style={{ marginBottom: 6 }}>{m.lbl}</div>
@@ -156,6 +158,14 @@ export const GrantDetail = ({ navigate, route }) => {
       {tab === 'history'  && <HistoryTab grant={grant} />}
     </div>
   );
+};
+
+// Elapsed fraction (0..1) of grant-year `n`'s 12-month window, real clock.
+const yearElapsedFrac = (grant, n) => {
+  const ys = new Date(grant.start.slice(0, 10) + 'T00:00:00');
+  ys.setFullYear(ys.getFullYear() + (n - 1));
+  const ye = new Date(ys); ye.setFullYear(ye.getFullYear() + 1);
+  return Math.min(1, Math.max(0, (Date.now() - ys.getTime()) / (ye.getTime() - ys.getTime())));
 };
 
 const OverviewTab = ({ grant, years, lineItems, grantTasks, navigate, setTab, setSelectedYear }) => {
@@ -498,7 +508,12 @@ const BudgetTab = ({ grant, years, lineItems, selectedYear, setSelectedYear }) =
               const bal = l.budgeted - l.spent - l.encumbered;
               const pct = l.spent / l.budgeted;
               return (
-                <tr key={`${l.cat}-${li}`} className="row-h">
+                <tr
+                  key={`${l.cat}-${li}`}
+                  className="row-h"
+                  title="Authorized budgets change through reallocation (2 CFR 200.308)"
+                  onClick={() => canRequest ? setShowRealloc(l.cat) : toast(requestBlocked)}
+                >
                   <td>
                     <div className="mono" style={{ fontSize: 11, color: 'var(--ink-2)', fontWeight: 600, letterSpacing: '0.08em' }}>{l.cat}</div>
                   </td>
@@ -520,7 +535,7 @@ const BudgetTab = ({ grant, years, lineItems, selectedYear, setSelectedYear }) =
                       style={{ padding: 2 }}
                       aria-label={`Adjust ${l.cat} via reallocation`}
                       title="Authorized budgets change through reallocation (2 CFR 200.308 prior approval), not in-place edits"
-                      onClick={() => canRequest ? setShowRealloc(l.cat) : toast(requestBlocked)}
+                      onClick={(e) => { e.stopPropagation(); canRequest ? setShowRealloc(l.cat) : toast(requestBlocked); }}
                     >
                       <Icon name="dots" size={14} />
                     </button>
@@ -551,12 +566,29 @@ const BudgetTab = ({ grant, years, lineItems, selectedYear, setSelectedYear }) =
             <span className="kicker">vs plan</span>
           </div>
           <div className="card-body">
-            <div className="lede" style={{ fontSize: 16, marginBottom: 16 }}>
-              Year {selectedYear} is pacing within <span style={{ color: 'var(--fund)' }}>2.1% of planned cadence</span> — encumbered + spent represents 38.5% of the annual award against an expected 42% at this midpoint.
-            </div>
+            {(() => {
+              // Plan-vs-actual is DERIVED, not asserted: expected pace is the
+              // elapsed fraction of the selected grant-year's window; actual is
+              // (spent + encumbered) / budgeted from the live ledger.
+              const expected = yearElapsedFrac(grant, selectedYear);
+              const budgetedSum = lineItems.reduce((s, l) => s + l.budgeted, 0);
+              const usedSum = lineItems.reduce((s, l) => s + l.spent + l.encumbered, 0);
+              const usedPct = budgetedSum > 0 ? usedSum / budgetedSum : 0;
+              const deltaPp = Math.abs(usedPct - expected) * 100;
+              const tone = usedPct > expected ? 'var(--alert)' : 'var(--fund)';
+              return (
+                <div className="lede" style={{ fontSize: 16, marginBottom: 16 }}>
+                  {expected === 0
+                    ? <>Year {selectedYear} has not begun — planned cadence starts with the period.</>
+                    : expected === 1
+                      ? <>Year {selectedYear} closed with <span style={{ color: tone }}>{fmt.pct(usedPct, 0)} of the annual award</span> committed (spent + encumbered).</>
+                      : <>Year {selectedYear} is pacing within <span style={{ color: tone }}>{deltaPp.toFixed(1)}pp of planned cadence</span> — encumbered + spent is {fmt.pct(usedPct, 0)} of the annual award against an expected {fmt.pct(expected, 0)} this far into the period.</>}
+                </div>
+              );
+            })()}
             <div className="flex-col gap-12">
               {lineItems.map((l, li) => {
-                const planPct = 0.42;
+                const planPct = yearElapsedFrac(grant, selectedYear);
                 const actualPct = l.spent / l.budgeted;
                 const variance = actualPct - planPct;
                 return (

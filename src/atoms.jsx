@@ -29,6 +29,10 @@ export const fmt = {
     const d = new Date(s + 'T00:00:00');
     return d.toLocaleDateString('en-US', { month: 'short', day: 'numeric' });
   },
+  monthYear: (s) => {
+    const d = new Date(s + 'T00:00:00');
+    return d.toLocaleDateString('en-US', { month: 'short', year: 'numeric' });
+  },
   daysUntil: (s) => {
     const d = new Date(s + 'T00:00:00');
     // Relative to the REAL today (shared module-eval value), so "X days late"
