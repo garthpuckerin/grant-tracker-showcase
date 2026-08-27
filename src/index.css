@@ -2308,6 +2308,13 @@ select.field-input { cursor: pointer; }
    block's gd-years auto-fit would otherwise win the cascade).
    ============================================================ */
 @media (max-width: 599px) {
+  /* Footers are desktop chrome — the mobile experience ends at the content
+     (the bottom tab bar owns the floor). */
+  .colophon,
+  .landing-foot {
+    display: none;
+  }
+
   /* The More sheet must own the screen: drawer + scrim rise ABOVE the bottom
      tab bar (z 150), so two navigation chromes never show live at once. */
   .nav-backdrop { z-index: 160; }
@@ -2366,5 +2373,13 @@ select.field-input { cursor: pointer; }
   }
   .gd-years > div > .mono:last-child {
     flex-shrink: 0;
+  }
+}
+
+/* Landscape phones (touch, short height): same footer rule as portrait. */
+@media (max-height: 480px) and (hover: none) {
+  .colophon,
+  .landing-foot {
+    display: none;
   }
 }

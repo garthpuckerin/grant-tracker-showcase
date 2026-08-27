@@ -91,6 +91,8 @@ test('companion surface: authoring stays on the workstation; actions stay everyw
   await expect(page.locator('h1')).toContainText('Good morning')
   await expect(page.getByRole('button', { name: 'New Grant' })).toHaveCount(0)
   await expect(page.getByRole('button', { name: 'Export' })).toHaveCount(0)
+  // Footers are desktop chrome — hidden on the mobile experience.
+  await expect(page.locator('.colophon')).toBeHidden()
 
   // Budget tab: no ledger authoring — but the SIGNATURE mobile action
   // (approve/deny a reallocation) works end to end.
