@@ -2239,3 +2239,12 @@ select.field-input { cursor: pointer; }
 .chart-hits button { flex: 1; min-width: 0; background: transparent; border: 0; cursor: pointer; border-radius: 2px; padding: 0; }
 .chart-hits button:hover, .chart-hits button:focus-visible { background: color-mix(in oklch, var(--ink) 7%, transparent); }
 .chart-note { font-size: 10px; letter-spacing: 0.08em; text-transform: uppercase; color: var(--ink-4); margin-top: 10px; }
+
+/* Clickable stat tiles + filter states (dashboard KPIs, insight agent tiles,
+   compliance framework rows). */
+.metric.clickable { cursor: pointer; transition: background 0.12s, border-color 0.12s; }
+.metric.clickable:hover, .metric.clickable:focus-visible { background: var(--paper-tint); border-color: var(--rule-strong); }
+.metric-on { box-shadow: inset 0 0 0 1px var(--accent); }
+.row-on td { background: var(--paper-tint); }
+.sponsor-row { border-radius: 2px; padding: 2px 4px; margin: -2px -4px; }
+.sponsor-row:hover, .sponsor-row:focus-visible { background: var(--paper-tint); }

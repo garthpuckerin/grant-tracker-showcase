@@ -121,3 +121,41 @@ test('the dashboard chart is backed by numbers: month drill-down cross-foots to 
   expect(drawer.total).toBe(barValue)
   expect(drawer.rowSum).toBe(barValue)
 })
+
+test('the audit trail is live: approving a reallocation lands in the grant history with a session badge', async ({ page }) => {
+  await enterApp(page, { name: 'grant', id: '1', tab: 'budget' })
+  await page.goto('/')
+  await page.getByRole('button', { name: 'budget', exact: true }).click()
+  await page.getByRole('button', { name: 'Approve' }).click()
+
+  await page.getByRole('button', { name: 'history', exact: true }).click()
+  const trail = page.locator('.card').filter({ hasText: 'Audit Trail' })
+  await expect(trail).toContainText('Approved reallocation')
+  await expect(trail).toContainText('$8,000 · SUPPLIES → EQUIPMENT')
+  await expect(trail).toContainText('1 this session')
+  await expect(trail.locator('text=SESSION').first()).toBeVisible()
+
+  // An award with no fixture history shows the designed empty state.
+  await enterApp(page, { name: 'grant', id: '10', tab: 'history' })
+  await page.goto('/')
+  await expect(page.getByText("Nothing in this award's audit trail")).toBeVisible()
+})
+
+test('insight agent tiles and compliance framework rows filter their lists', async ({ page }) => {
+  await enterApp(page, { name: 'insights' })
+  await page.goto('/')
+  await expect(page.locator('.insight-row')).toHaveCount(9)
+  await page.getByRole('button', { name: /● BUDGET/ }).click()
+  await expect(page.locator('.insight-row')).toHaveCount(2)
+  await page.getByRole('button', { name: /● BUDGET/ }).click()
+  await expect(page.locator('.insight-row')).toHaveCount(9)
+
+  await enterApp(page, { name: 'compliance' })
+  await page.goto('/')
+  await expect(page.getByRole('button', { name: 'Resolve' })).toHaveCount(3)
+  await page.locator('tr.row-h').filter({ hasText: 'Institutional' }).click()
+  await expect(page.getByRole('button', { name: 'Resolve' })).toHaveCount(1)
+  await expect(page.getByText(/1 Institutional of 3/)).toBeVisible()
+  await page.locator('tr.row-h').filter({ hasText: 'Institutional' }).click()
+  await expect(page.getByRole('button', { name: 'Resolve' })).toHaveCount(3)
+})

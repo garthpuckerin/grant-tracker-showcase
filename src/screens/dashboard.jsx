@@ -81,22 +81,22 @@ export const Dashboard = ({ navigate }) => {
 
       {/* Metric strip */}
       <div className="bento" style={{ gridTemplateColumns: 'repeat(4, 1fr)' }}>
-        <div className="metric">
+        <div className="metric clickable" role="button" tabIndex={0} aria-label="Active awards — open the grants list" onClick={() => navigate({ name: 'grants' })} onKeyDown={(e) => { if (e.key === 'Enter' || e.key === ' ') { e.preventDefault(); navigate({ name: 'grants' }); } }}>
           <div className="lbl">Active Awards</div>
           <div className="val">{activeCount}<span className="unit">of {D.grants.length}</span></div>
           <div className="delta up">▲ 2 new this quarter</div>
         </div>
-        <div className="metric">
+        <div className="metric clickable" role="button" tabIndex={0} aria-label="Total awarded — open the grants list" onClick={() => navigate({ name: 'grants' })} onKeyDown={(e) => { if (e.key === 'Enter' || e.key === ' ') { e.preventDefault(); navigate({ name: 'grants' }); } }}>
           <div className="lbl">Total Awarded</div>
           <div className="val">${(totalBudget / 1_000_000).toFixed(2)}<span className="unit">M obligated</span></div>
           <div className="delta">across {D.agencyBreakdown.length} sponsoring agencies</div>
         </div>
-        <div className="metric">
+        <div className="metric clickable" role="button" tabIndex={0} aria-label="Lifetime expended — open reports" onClick={() => navigate({ name: 'reports' })} onKeyDown={(e) => { if (e.key === 'Enter' || e.key === ' ') { e.preventDefault(); navigate({ name: 'reports' }); } }}>
           <div className="lbl">Lifetime Expended</div>
           <div className="val">${(totalSpent / 1_000_000).toFixed(2)}<span className="unit">M · {fmt.pct(utilization, 0)}</span></div>
           <div className="delta">Remaining ${((totalBudget - totalSpent) / 1_000_000).toFixed(2)}M</div>
         </div>
-        <div className="metric">
+        <div className="metric clickable" role="button" tabIndex={0} aria-label="Open tasks — open the task board" onClick={() => navigate({ name: 'tasks' })} onKeyDown={(e) => { if (e.key === 'Enter' || e.key === ' ') { e.preventDefault(); navigate({ name: 'tasks' }); } }}>
           <div className="lbl">Open Tasks</div>
           <div className="val">{openTasks}<span className="unit">items</span></div>
           <div className="delta down">{overdue} overdue · {dueSoon} due ≤14d</div>
@@ -261,7 +261,7 @@ export const Dashboard = ({ navigate }) => {
               const overdue = days < 0;
               const grant = D.grants.find(g => g.id === t.grantId);
               return (
-                <div className="row" key={t.id} style={{ padding: '12px 18px' }}>
+                <div className="row row-h" key={t.id} style={{ padding: '12px 18px', cursor: 'pointer' }} role="button" tabIndex={0} aria-label={`Open tasks — ${t.title}`} onClick={() => navigate({ name: 'tasks' })} onKeyDown={(e) => { if (e.key === 'Enter') navigate({ name: 'tasks' }); }}>
                   <div style={{ minWidth: 52, textAlign: 'center' }}>
                     <div className="serif" style={{ fontSize: 28, lineHeight: 1, color: overdue ? 'var(--alert)' : 'var(--ink)' }}>{Math.abs(days)}</div>
                     <div className="mono" style={{ fontSize: 9, color: 'var(--ink-3)', letterSpacing: '0.12em', textTransform: 'uppercase', marginTop: 2 }}>
@@ -293,7 +293,7 @@ export const Dashboard = ({ navigate }) => {
               {D.agencyBreakdown.map((a, i) => {
                 const pct = a.budget / totalBudget;
                 return (
-                  <div key={i}>
+                  <div key={i} className="sponsor-row" role="button" tabIndex={0} aria-label={`View ${a.agency} grants`} onClick={() => navigate({ name: 'grants', agency: a.agency })} onKeyDown={(e) => { if (e.key === 'Enter') navigate({ name: 'grants', agency: a.agency }); }} style={{ cursor: 'pointer' }}>
                     <div style={{ display: 'flex', alignItems: 'baseline', justifyContent: 'space-between', marginBottom: 6 }}>
                       <span className="mono" style={{ fontSize: 12, letterSpacing: '0.06em' }}>{a.agency}</span>
                       <span style={{ display: 'flex', alignItems: 'baseline', gap: 10 }}>
@@ -312,7 +312,10 @@ export const Dashboard = ({ navigate }) => {
         <div className="card">
           <div className="card-head">
             <div className="card-title">Compliance Posture</div>
-            <span className="status active"><span className="dot"></span>{cp.score} / 100</span>
+            <div style={{ display: 'flex', alignItems: 'center', gap: 12 }}>
+              <span className="status active"><span className="dot"></span>{cp.score} / 100</span>
+              <button className="btn-link" onClick={() => navigate({ name: 'compliance' })}>Open →</button>
+            </div>
           </div>
           <div className="card-body">
             <div style={{ display: 'grid', gridTemplateColumns: '140px 1fr', gap: 24, alignItems: 'center' }}>

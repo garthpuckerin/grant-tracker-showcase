@@ -160,7 +160,7 @@ const App = () => {
   let screen;
   switch (route.name) {
     case 'dashboard':  screen = <Dashboard   navigate={navigate} />; break;
-    case 'grants':     screen = <GrantsList  navigate={navigate} search={search} />; break;
+    case 'grants':     screen = <GrantsList  navigate={navigate} search={search} route={route} />; break;
     case 'grant':      screen = <GrantDetail navigate={navigate} route={route} />; break;
     case 'tasks':      screen = <Tasks       navigate={navigate} search={search} />; break;
     case 'documents':  screen = <Documents   navigate={navigate} />; break;

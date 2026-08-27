@@ -325,7 +325,7 @@ const OverviewTab = ({ grant, years, lineItems, grantTasks, navigate, setTab, se
         <div className="card">
           <div className="card-head">
             <div className="card-title">Burn Rate</div>
-            <span className="kicker">YR{grant.year}</span>
+            <button className="btn-link" onClick={() => setTab('budget')}>Budget →</button>
           </div>
           <div className="card-body" style={{ textAlign: 'center' }}>
             <Donut pct={yearSpent / yearAward} size={170} label={`${fmt.money(yearSpent, { compact: true })} of ${fmt.money(yearAward, { compact: true })}`} />
@@ -851,7 +851,14 @@ const ComplianceTab = ({ grant }) => {
 };
 
 const HistoryTab = ({ grant }) => {
-  const events = [
+  // Live session events from the store's audit trail (the engine mirrors this
+  // with its audit router + AuditLog model), scoped to this award, ahead of
+  // the award's fixture history. Fixture events belong to grant 1 only.
+  const auditLog = useStore((s) => s.auditLog);
+  const live = auditLog
+    .filter((e) => e.grantId === grant.id)
+    .map((e) => ({ date: e.at, who: e.who, what: e.what, detail: e.detail, live: true }));
+  const fixtures = grant.id !== '1' ? [] : [
     { date: shiftIso('2026-05-15'), who: 'Dr. James Rodriguez', what: 'Submitted budget reallocation request', detail: '$8,000 · Supplies → Equipment' },
     { date: shiftIso('2026-05-12'), who: 'Dr. James Rodriguez', what: 'Uploaded document', detail: 'Q1 Progress Report — DRAFT.docx' },
     { date: shiftIso('2026-04-30'), who: 'AI · Compliance',    what: 'Flagged finding',                       detail: '2 CFR 200.430 — Time & effort overdue' },
@@ -861,18 +868,28 @@ const HistoryTab = ({ grant }) => {
     { date: shiftIso('2026-02-19'), who: 'Demo Administrator', what: 'Executed subaward',                     detail: 'State A&M · $84,000 · cooperative' },
     { date: shiftIso('2026-01-08'), who: 'NSF (external)',    what: 'Award notice received',                  detail: 'NSF-EDU-2025 · $250,000' },
   ];
+  const events = [...live, ...fixtures];
+  if (events.length === 0) {
+    return (
+      <div className="empty-state">
+        <div className="kicker">No activity yet</div>
+        <p className="serif">Nothing in this award's audit trail</p>
+        <p className="muted">Approvals, certifications, task completions, and uploads you perform in this session are recorded here — the production build persists the full immutable trail.</p>
+      </div>
+    );
+  }
   return (
     <div className="card">
       <div className="card-head">
         <div className="card-title">Audit Trail</div>
-        <span className="kicker">Reverse chronological</span>
+        <span className="kicker">{events.length} event{events.length !== 1 ? 's' : ''}{live.length ? ` · ${live.length} this session` : ''} · reverse chronological</span>
       </div>
       <div style={{ padding: '8px 0' }}>
         {events.map((e, i) => (
           <div key={i} style={{ display: 'grid', gridTemplateColumns: '120px 1fr 24px 1fr', gap: 16, padding: '14px 24px', borderBottom: i < events.length - 1 ? '1px solid var(--rule)' : 'none', alignItems: 'baseline' }}>
             <div className="mono" style={{ fontSize: 11, color: 'var(--ink-3)', letterSpacing: '0.06em' }}>{e.date}</div>
             <div>
-              <div style={{ fontSize: 13, fontWeight: 500 }}>{e.what}</div>
+              <div style={{ fontSize: 13, fontWeight: 500 }}>{e.what}{e.live && <span className="mono" style={{ fontSize: 9, letterSpacing: '0.12em', color: 'var(--accent)', marginLeft: 8 }}>SESSION</span>}</div>
               <div className="muted" style={{ fontSize: 12, marginTop: 2 }}>by {e.who}</div>
             </div>
             <div style={{ display: 'flex', justifyContent: 'center' }}>

@@ -34,6 +34,26 @@ let state = {
   // Workspace members (invitable) and the SF-425 filings register (certifiable).
   users: DATA.users,
   filings: DATA.filings,
+  // Live audit trail — every consequential session action appends here
+  // (mirrors the engine's audit router + AuditLog model). Grant History tabs
+  // and the Settings audit count derive from it.
+  auditLog: [],
+};
+
+const money = (n) => '$' + Number(n).toLocaleString('en-US');
+const actorName = () => {
+  const u = state.users.find((x) => x.id === state.currentUserId);
+  return u ? u.name : 'Demo Administrator';
+};
+// Append an audit event (immutably; the caller emits).
+const logAudit = (what, detail, grantId) => {
+  state = {
+    ...state,
+    auditLog: [
+      { id: 'a-' + (state.auditLog.length + 1), at: isoFromToday(0), who: actorName(), what, detail, grantId: grantId || null },
+      ...state.auditLog,
+    ],
+  };
 };
 
 const listeners = new Set();
@@ -62,10 +82,14 @@ export const addTask = (task) => {
 // grant-detail task tab — subscribes to the store, so a completion re-derives
 // everywhere at once.
 export const updateTask = (id, patch) => {
+  const prev = state.tasks.find((t) => t.id === id);
   state = {
     ...state,
     tasks: state.tasks.map((t) => (t.id === id ? { ...t, ...patch } : t)),
   };
+  if (prev && patch.status && patch.status !== prev.status && (patch.status === 'COMPLETE' || prev.status === 'COMPLETE')) {
+    logAudit(patch.status === 'COMPLETE' ? 'Completed task' : 'Reopened task', prev.title, prev.grantId);
+  }
   emit();
 };
 
@@ -76,6 +100,7 @@ export const addLineItem = (grantId, item) => {
     ...state,
     lineItems: { ...state.lineItems, [grantId]: [...existing, item] },
   };
+  logAudit('Added budget line item', `${item.cat} · ${money(item.budgeted)}`, grantId);
   emit();
 };
 
@@ -89,6 +114,7 @@ export const dismissInsight = (id) => {
 // Prepend an uploaded document immutably.
 export const addDocument = (doc) => {
   state = { ...state, documents: [doc, ...state.documents] };
+  logAudit('Added document', doc.name, doc.grantId);
   emit();
 };
 
@@ -102,6 +128,8 @@ export const resolveFinding = (id, resolvedBy) => {
       f.id === id ? { ...f, status: 'RESOLVED', resolvedBy, resolvedAt: isoFromToday(0) } : f,
     ),
   };
+  const fnd = state.findings.find((f) => f.id === id);
+  if (fnd) logAudit('Resolved compliance finding', `${fnd.rule} — ${fnd.title}`, fnd.grantId);
   emit();
 };
 
@@ -121,12 +149,14 @@ export const addFiling = (filing) => {
 // caller (SF-425 detail) enforces the two preconditions — the report must
 // cross-foot, and the acting user must be an authorized official (rbac.js).
 export const certifyFiling = (id, certifiedBy) => {
+  const filing = state.filings.find((f) => f.id === id);
   state = {
     ...state,
     filings: state.filings.map((f) =>
       f.id === id ? { ...f, status: 'COMPLETE', certifiedBy, certifiedAt: isoFromToday(0) } : f,
     ),
   };
+  if (filing) logAudit('Certified SF-425', `${filing.period} · ${(DATA.grants[filing.gi] || {}).number || ''}`, (DATA.grants[filing.gi] || {}).id);
   emit();
 };
 
@@ -163,6 +193,7 @@ export const requestReallocation = ({ grantId, fromCat, toCat, amount, reason },
     applied: false,
   };
   state = { ...state, reallocations: [record, ...state.reallocations] };
+  logAudit('Submitted budget reallocation request', `${money(record.amount)} · ${fromCat} → ${toCat}`, grantId);
   emit();
   return record;
 };
@@ -171,6 +202,7 @@ export const requestReallocation = ({ grantId, fromCat, toCat, amount, reason },
 // so the budget ledger re-derives (computeCategoryDeltas below). `decision` is
 // 'APPROVED' | 'DENIED'; `deciderId` is the acting user's id.
 export const decideReallocation = (id, decision, deciderId) => {
+  const rec = state.reallocations.find((r) => r.id === id);
   state = {
     ...state,
     reallocations: state.reallocations.map((r) =>
@@ -185,6 +217,7 @@ export const decideReallocation = (id, decision, deciderId) => {
         : r,
     ),
   };
+  if (rec) logAudit(decision === 'APPROVED' ? 'Approved reallocation' : 'Denied reallocation', `${money(rec.amount)} · ${rec.fromCat} → ${rec.toCat}`, rec.grantId);
   emit();
 };
 

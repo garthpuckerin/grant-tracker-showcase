@@ -83,13 +83,14 @@ const SavedViews = ({ apply, activeId }) => {
   );
 };
 
-export const GrantsList = ({ navigate, search }) => {
+export const GrantsList = ({ navigate, search, route }) => {
   const grants = useStore((s) => s.grants);
   const D = { ...DATA, grants };
   const toast = useToast();
   const [showForm, setShowForm] = React.useState(false);
   const [statusFilter, setStatusFilter] = React.useState('ALL');
-  const [agency, setAgency] = React.useState('ALL');
+  const [agency, setAgency] = React.useState(route?.agency || 'ALL');
+  React.useEffect(() => { if (route?.agency) setAgency(route.agency); }, [route?.agency]);
   const [sort, setSort] = React.useState('utilization');
   // table | cards — phones open in the card view (a 7-column ledger is not a
   // mobile UI); desktop keeps the ledger. The toggle still works either way.

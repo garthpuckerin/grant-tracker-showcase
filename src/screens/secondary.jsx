@@ -22,6 +22,8 @@ export const Insights = ({ navigate }) => {
   // Live insights from the store — dismiss removes an insight here, in the
   // topbar bell, the dashboard widget, and the sidebar count at once.
   const all = useStore((s) => s.insights);
+  const [agentFilter, setAgentFilter] = React.useState(null);
+  const shown = agentFilter ? all.filter((i) => i.agent === agentFilter) : all;
   const dismiss = (i) => { dismissInsight(i.id); toast('Insight dismissed.'); };
   const takeAction = (i, grant) => {
     if (grant) navigate({ name: 'grant', id: grant.id, grant, tab: ACTION_TAB[i.agent] || 'overview' });
@@ -58,10 +60,18 @@ export const Insights = ({ navigate }) => {
       {/* Agent strip */}
       <div className="bento" style={{ gridTemplateColumns: 'repeat(5, 1fr)', marginBottom: 24 }}>
         {agents.map(a => (
-          <div key={a.name} className="metric" style={{ minHeight: 100 }}>
+          <button
+            key={a.name}
+            type="button"
+            className={`metric clickable ${agentFilter === a.name ? 'metric-on' : ''}`}
+            style={{ minHeight: 100, textAlign: 'left', font: 'inherit', color: 'inherit' }}
+            aria-pressed={agentFilter === a.name}
+            title={agentFilter === a.name ? 'Clear filter' : `Show only ${a.name} findings`}
+            onClick={() => setAgentFilter(agentFilter === a.name ? null : a.name)}
+          >
             <div className="lbl" style={{ color: a.color }}>● {a.name}</div>
             <div className="val" style={{ fontSize: 36 }}>{a.count}<span className="unit">finding{a.count !== 1 ? 's' : ''}</span></div>
-          </div>
+          </button>
         ))}
       </div>
 
@@ -73,8 +83,15 @@ export const Insights = ({ navigate }) => {
           <p className="muted">Every finding has been dismissed or actioned. The agents keep analyzing the portfolio and will surface new ones here.</p>
         </div>
       )}
+      {shown.length === 0 && all.length > 0 && (
+        <div className="empty-state">
+          <div className="kicker">Filtered</div>
+          <p className="serif">No {agentFilter} findings right now</p>
+          <p className="muted">Click the {agentFilter} tile again to clear the filter.</p>
+        </div>
+      )}
       <div className="flex-col gap-12">
-        {all.map(i => {
+        {shown.map(i => {
           const grant = D.grants.find(g => g.id === i.grantId);
           const color = insightColor(i);
           return (
@@ -123,9 +140,11 @@ export const Compliance = () => {
   // (data.js buildCompliance), so resolving one moves the table, the donut,
   // the dashboard posture, and the grant's rule slice together.
   const findings = useStore((s) => s.findings);
+  const [fwFilter, setFwFilter] = React.useState(null);
   const lastScanAt = useStore((s) => s.lastScanAt);
   const { frameworks, portfolio } = React.useMemo(() => buildCompliance(findings), [findings]);
   const openFindings = findings.filter((f) => f.status === 'OPEN');
+  const shownFindings = fwFilter ? openFindings.filter((f) => f.fw === fwFilter) : openFindings;
   const resolvedCount = findings.length - openFindings.length;
   const findingGrantCount = new Set(openFindings.map(f => f.grant)).size;
 
@@ -181,7 +200,14 @@ export const Compliance = () => {
             </thead>
             <tbody>
               {frameworks.map(r => (
-                <tr key={r.fw} className="row-h">
+                <tr
+                  key={r.fw}
+                  className={`row-h ${fwFilter === r.fw ? 'row-on' : ''}`}
+                  style={{ cursor: 'pointer' }}
+                  aria-selected={fwFilter === r.fw}
+                  title={fwFilter === r.fw ? 'Clear filter' : `Show only ${r.fw} findings`}
+                  onClick={() => setFwFilter(fwFilter === r.fw ? null : r.fw)}
+                >
                   <td className="mono" style={{ fontSize: 12, fontWeight: 600 }}>{r.fw}</td>
                   <td className="muted" style={{ fontSize: 12 }}>{r.src}</td>
                   <td className="num r">{r.rules}</td>
@@ -199,7 +225,7 @@ export const Compliance = () => {
         <div className="card-head">
           <div className="card-title">Open Findings</div>
           <span className="kicker">
-            {openFindings.length} across {findingGrantCount} grant{findingGrantCount === 1 ? '' : 's'}
+            {shownFindings.length}{fwFilter ? ` ${fwFilter}` : ''} of {openFindings.length} across {findingGrantCount} grant{findingGrantCount === 1 ? '' : 's'}
             {resolvedCount > 0 && ` · ${resolvedCount} resolved this session`}
           </span>
         </div>
@@ -211,7 +237,7 @@ export const Compliance = () => {
           </div>
         ) : (
         <div className="list">
-          {openFindings.map((f) => (
+          {shownFindings.map((f) => (
             <div key={f.id} className="row" style={{ alignItems: 'flex-start', padding: '16px 20px' }}>
               <span style={{ width: 6, height: 6, marginTop: 6, borderRadius: '50%', background: f.sev === 'HIGH' ? 'var(--alert)' : 'var(--accent)' }}></span>
               <div style={{ flex: 1 }}>
