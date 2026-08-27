@@ -1156,6 +1156,14 @@ button { font-family: inherit; cursor: pointer; }
 .nav-backdrop { display: none; }
 
 @media (max-width: 599px) {
+  /* Chart summary stats wrap into two rows instead of x-scrolling the card. */
+  .num-strip {
+    flex-wrap: wrap;
+    row-gap: 12px;
+    column-gap: 24px !important;
+  }
+
+
   /* PHONE tier: collapse the two-column app shell to a single column */
   .app {
     grid-template-columns: 1fr;
@@ -1330,12 +1338,15 @@ button { font-family: inherit; cursor: pointer; }
 }
 
 /* ============================================================
-   ≤780 content tier: single-column grids, stacked page header,
-   collapsible topbar search (no wrapping second row), wrapping tabs.
-   ============================================================ */ so the search input
-   drops to its own full-width row beneath the crumbs + actions.
+   ≤767 content tier: single-column grids, stacked page header,
+   collapsible topbar search (the search input drops to its own
+   full-width row beneath the crumbs + actions), wrapping tabs.
    The 900px drawer behavior above is preserved (this is additive).
    Every dense/split grid collapses to a single column.
+   NOTE: a spliced comment banner here once left stray text before
+   the @media, and the parser swallowed this ENTIRE block as one
+   invalid rule — the whole phone tier silently dead. The mobile
+   sweep (scripts/mobile-sweep.mjs) now catches the symptoms.
    ============================================================ */
 @media (max-width: 767px) {
   /* Single column for all content grids. */
@@ -2264,3 +2275,96 @@ select.field-input { cursor: pointer; }
 .row-on td { background: var(--paper-tint); }
 .sponsor-row { border-radius: 2px; padding: 2px 4px; margin: -2px -4px; }
 .sponsor-row:hover, .sponsor-row:focus-visible { background: var(--paper-tint); }
+
+/* ============================================================
+   Scrollbars: thin and quiet on every sanctioned scroll surface
+   (Windows classic scrollbars otherwise dominate cards/drawers).
+   ============================================================ */
+.main, .table-scroll, .drawer-body, .modal-body, .sidebar {
+  scrollbar-width: thin;
+  scrollbar-color: var(--rule-strong) transparent;
+}
+.main::-webkit-scrollbar, .table-scroll::-webkit-scrollbar,
+.drawer-body::-webkit-scrollbar, .modal-body::-webkit-scrollbar,
+.sidebar::-webkit-scrollbar {
+  width: 8px;
+  height: 8px;
+}
+.main::-webkit-scrollbar-thumb, .table-scroll::-webkit-scrollbar-thumb,
+.drawer-body::-webkit-scrollbar-thumb, .modal-body::-webkit-scrollbar-thumb,
+.sidebar::-webkit-scrollbar-thumb {
+  background: var(--rule-strong);
+  border-radius: 4px;
+}
+.main::-webkit-scrollbar-track, .table-scroll::-webkit-scrollbar-track,
+.drawer-body::-webkit-scrollbar-track, .modal-body::-webkit-scrollbar-track,
+.sidebar::-webkit-scrollbar-track {
+  background: transparent;
+}
+
+/* ============================================================
+   ≤599 phone tail block — LAST in the file on purpose: these
+   override earlier tier rules of equal specificity (the ≤767
+   block's gd-years auto-fit would otherwise win the cascade).
+   ============================================================ */
+@media (max-width: 599px) {
+  /* The More sheet must own the screen: drawer + scrim rise ABOVE the bottom
+     tab bar (z 150), so two navigation chromes never show live at once. */
+  .nav-backdrop { z-index: 160; }
+  .sidebar { z-index: 170; }
+
+  /* KPI tiles pair up on phones — halves the scroll, and the tiles' short
+     content affords it (values scale down so units never wrap raggedly). */
+  .bento[style] {
+    grid-template-columns: 1fr 1fr !important;
+  }
+  .metric .val {
+    font-size: 28px;
+  }
+  .metric .val .unit {
+    font-size: 10px;
+  }
+  .bento > *:nth-child(odd) {
+    border-right: 1px solid var(--rule);
+  }
+
+  /* Multi-year timeline: phones get compact YEAR ROWS, not five shrunken
+     tiles (a data-dense workstation grid has no phone form — the companion
+     view is a list). Inline tile styles are overridden deliberately. */
+  .gd-years {
+    grid-template-columns: 1fr !important;
+  }
+  .gd-years > div {
+    display: flex !important;
+    align-items: center;
+    gap: 9px;
+    padding: 12px 14px !important;
+  }
+  .gd-years > div > * {
+    margin: 0 !important;
+  }
+  /* DOM order: eyebrow (CLOSED · FY24), Y#, award, expended%. The row shows
+     Y# first, the eyebrow flexes and ellipsizes, figures sit right. */
+  .gd-years > div .serif {
+    font-size: 20px !important;
+    order: -1;
+    min-width: 26px;
+  }
+  .gd-years > div > div:first-child {
+    flex: 1 1 auto;
+    min-width: 0;
+    overflow: hidden;
+    text-overflow: ellipsis;
+    white-space: nowrap;
+    /* Tighter than the inline 10px/0.14em so "CURRENT · FY26" fits un-elided. */
+    font-size: 9px !important;
+    letter-spacing: 0.08em !important;
+  }
+  .gd-years > div > .num {
+    margin-left: auto !important;
+    flex-shrink: 0;
+  }
+  .gd-years > div > .mono:last-child {
+    flex-shrink: 0;
+  }
+}

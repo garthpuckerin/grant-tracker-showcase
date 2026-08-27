@@ -625,8 +625,8 @@ const BudgetTab = ({ grant, years, lineItems, selectedYear, setSelectedYear }) =
         </div>
       </div>
 
-      {/* Variance + reallocation */}
-      <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 24, marginTop: 24 }}>
+      {/* Variance + reallocation — g-split so the pair stacks on phones */}
+      <div className="g-split" style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 24, marginTop: 24 }}>
         <div className="card">
           <div className="card-head">
             <div className="card-title">Variance Analysis</div>
@@ -659,7 +659,7 @@ const BudgetTab = ({ grant, years, lineItems, selectedYear, setSelectedYear }) =
                 const actualPct = l.spent / l.budgeted;
                 const variance = actualPct - planPct;
                 return (
-                  <div key={`${l.cat}-${li}`} style={{ display: 'grid', gridTemplateColumns: '90px 1fr 80px', gap: 12, alignItems: 'center' }}>
+                  <div key={`${l.cat}-${li}`} className="bar-row" style={{ display: 'grid', gridTemplateColumns: '90px 1fr 80px', gap: 12, alignItems: 'center' }}>
                     <span className="mono" style={{ fontSize: 10, letterSpacing: '0.1em' }}>{l.cat}</span>
                     <div className="track"><div className="fill" style={{ width: (actualPct * 100) + '%' }}></div></div>
                     <span className="num" style={{ fontSize: 11, textAlign: 'right', color: variance > 0 ? 'var(--alert)' : 'var(--fund)' }}>

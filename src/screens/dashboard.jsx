@@ -156,7 +156,7 @@ export const Dashboard = ({ navigate }) => {
             </div>
           </div>
           <div className="card-body">
-            <div style={{ display: 'flex', alignItems: 'baseline', gap: 32, marginBottom: 18 }}>
+            <div className="num-strip" style={{ display: 'flex', alignItems: 'baseline', gap: 32, marginBottom: 18 }}>
               <div className="num-block">
                 <div className="lbl">Total</div>
                 <div className="val serif" data-window-total>{fmt.money(windowTotal, { compact: true })}</div>
@@ -372,7 +372,7 @@ export const Dashboard = ({ navigate }) => {
             </div>
           </div>
           <div className="card-body">
-            <div style={{ display: 'grid', gridTemplateColumns: '140px 1fr', gap: 24, alignItems: 'center' }}>
+            <div className="g-split" style={{ display: 'grid', gridTemplateColumns: '140px 1fr', gap: 24, alignItems: 'center' }}>
               {/* No valueText in this 140px column — the framework enumeration
                   lives on the Compliance screen this card links to. */}
               <Donut pct={cp.scoreFrac} size={140} centerLabel="passing" label="Composite score" />
