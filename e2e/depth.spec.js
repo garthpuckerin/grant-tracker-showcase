@@ -42,11 +42,11 @@ test('completing a task re-derives the sidebar badge, the stats, and the dashboa
 test('resolving a compliance finding re-derives the score, the table, and the dashboard posture', async ({ page }) => {
   await enterApp(page, { name: 'compliance' })
   await page.goto('/')
-  await expect(page.getByRole('img', { name: /86% utilized/ })).toBeVisible()
+  await expect(page.getByRole('img', { name: /86% passing/ })).toBeVisible()
   await expect(page.getByRole('button', { name: 'Resolve' })).toHaveCount(3)
 
   await page.getByRole('button', { name: 'Resolve' }).first().click()
-  await expect(page.getByRole('img', { name: /91% utilized/ })).toBeVisible()
+  await expect(page.getByRole('img', { name: /91% passing/ })).toBeVisible()
   await expect(page.getByRole('button', { name: 'Resolve' })).toHaveCount(2)
   await expect(page.getByText(/1 resolved this session/)).toBeVisible()
 

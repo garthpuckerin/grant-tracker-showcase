@@ -382,7 +382,7 @@ const OverviewTab = ({ grant, years, lineItems, grantTasks, navigate, setTab, se
             <button className="btn-link" onClick={() => setTab('budget')}>Budget →</button>
           </div>
           <div className="card-body" style={{ textAlign: 'center' }}>
-            <Donut pct={yearSpent / yearAward} size={170} label={`${fmt.money(yearSpent, { compact: true })} of ${fmt.money(yearAward, { compact: true })}`} />
+            <Donut pct={yearSpent / yearAward} size={170} centerLabel="expended" label={`${fmt.money(yearSpent, { compact: true })} of ${fmt.money(yearAward, { compact: true })}`} />
             <div className="divider" style={{ margin: '20px 0' }}></div>
             <div style={{ display: 'flex', justifyContent: 'space-around', gap: 8 }}>
               <div className="num-block" style={{ alignItems: 'center', textAlign: 'center' }}>
@@ -865,7 +865,7 @@ const ComplianceTab = ({ grant }) => {
           <span className="kicker">Updated 12m ago</span>
         </div>
         <div className="card-body" style={{ textAlign: 'center' }}>
-          <Donut pct={scoreFrac} size={180} label={`${passing} of ${rules.length} rules passing`} valueText="2 CFR 200 · NSF PAPPG" />
+          <Donut pct={scoreFrac} size={180} centerLabel="passing" label={`${passing} of ${rules.length} rules passing`} valueText="2 CFR 200 · NSF PAPPG" />
           <div className="divider" style={{ margin: '24px 0' }}></div>
           <div style={{ textAlign: 'left' }} className="flex-col gap-12">
             {findings > 0 ? (

@@ -112,7 +112,7 @@ export const Status = ({ s }) => {
 };
 
 // Donut
-export const Donut = ({ pct, size = 140, label, valueText, color }) => {
+export const Donut = ({ pct, size = 140, label, valueText, centerLabel, color }) => {
   const stroke = 10;
   const r = (size - stroke) / 2;
   const c = 2 * Math.PI * r;
@@ -120,6 +120,12 @@ export const Donut = ({ pct, size = 140, label, valueText, color }) => {
   const { on } = useVizColor();
   // Explicit color always wins; otherwise color mode tints the arc by score.
   const fill = color || (on ? scoreColor(pct) : 'var(--ink)');
+  // The center block is clamped to the ring's inner circle so text can never
+  // collide with the arc: the number scales with the ring, and only the short
+  // uppercase centerLabel may join it. Long captions (valueText) render BELOW
+  // the ring — framework enumerations used to spill across the arc.
+  const inner = size - stroke * 2 - 16;
+  const numSize = Math.max(26, Math.min(40, Math.round(size * 0.22)));
   return (
     <div className="ring-wrap">
       <div style={{ position: 'relative', width: size, height: size }}>
@@ -128,19 +134,24 @@ export const Donut = ({ pct, size = 140, label, valueText, color }) => {
           width={size}
           height={size}
           role="img"
-          aria-label={`${(pct * 100).toFixed(0)}% utilized${label ? ` — ${label}` : ''}`}
+          aria-label={`${(pct * 100).toFixed(0)}%${centerLabel ? ` ${centerLabel}` : ''}${label ? ` — ${label}` : ''}`}
         >
           <circle className="track" cx={size/2} cy={size/2} r={r} strokeWidth={stroke} />
           <circle className="fill"  cx={size/2} cy={size/2} r={r} strokeWidth={stroke} stroke={fill} strokeDasharray={c} strokeDashoffset={off} />
         </svg>
         <div style={{ position: 'absolute', inset: 0, display: 'grid', placeItems: 'center', textAlign: 'center' }}>
-          <div>
-            <div className="serif" style={{ fontSize: 34, lineHeight: 1 }}>{(pct * 100).toFixed(0)}<span style={{ fontSize: 18, color: 'var(--ink-3)' }}>%</span></div>
-            {valueText && <div className="mono" style={{ fontSize: 10, color: 'var(--ink-3)', letterSpacing: '0.1em', marginTop: 4 }}>{valueText}</div>}
+          <div style={{ maxWidth: inner, overflow: 'hidden' }}>
+            <div className="serif" style={{ fontSize: numSize, lineHeight: 1 }}>{(pct * 100).toFixed(0)}<span style={{ fontSize: Math.round(numSize * 0.55), color: 'var(--ink-3)' }}>%</span></div>
+            {centerLabel && <div className="mono" style={{ fontSize: 9, color: 'var(--ink-3)', letterSpacing: '0.14em', textTransform: 'uppercase', marginTop: 5, whiteSpace: 'nowrap' }}>{centerLabel}</div>}
           </div>
         </div>
       </div>
-      {label && <div className="kicker">{label}</div>}
+      {(label || valueText) && (
+        <div style={{ display: 'flex', flexDirection: 'column', alignItems: 'center', gap: 4 }}>
+          {label && <div className="kicker">{label}</div>}
+          {valueText && <div className="mono" style={{ fontSize: 10, color: 'var(--ink-3)', letterSpacing: '0.08em', textAlign: 'center' }}>{valueText}</div>}
+        </div>
+      )}
     </div>
   );
 };

@@ -348,7 +348,9 @@ export const Dashboard = ({ navigate }) => {
           </div>
           <div className="card-body">
             <div style={{ display: 'grid', gridTemplateColumns: '140px 1fr', gap: 24, alignItems: 'center' }}>
-              <Donut pct={cp.scoreFrac} size={140} label="Composite score" valueText="2 CFR 200 · NIH · NSF" />
+              {/* No valueText in this 140px column — the framework enumeration
+                  lives on the Compliance screen this card links to. */}
+              <Donut pct={cp.scoreFrac} size={140} centerLabel="passing" label="Composite score" />
               <div className="flex-col gap-12">
                 <div className="flag fund">
                   <div className="lbl">{cp.totalPassing} of {cp.totalRules} rules passing</div>

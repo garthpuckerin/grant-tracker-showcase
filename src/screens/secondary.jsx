@@ -205,7 +205,7 @@ export const Compliance = () => {
         <div className="card">
           <div className="card-head"><div className="card-title">Portfolio Score</div></div>
           <div className="card-body" style={{ textAlign: 'center' }}>
-            <Donut pct={portfolio.scoreFrac} size={200} valueText="2 CFR 200 · NIH · NSF · ED" label="Composite portfolio score" />
+            <Donut pct={portfolio.scoreFrac} size={200} centerLabel="passing" valueText="2 CFR 200 · NIH · NSF · ED" label="Composite portfolio score" />
           </div>
         </div>
         <div className="card">
