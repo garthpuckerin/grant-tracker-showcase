@@ -3,7 +3,8 @@ import React from 'react';
 import { DATA } from '../data.js';
 import { fmt, Icon, Status, Utilization } from '../atoms.jsx';
 import { utilizationColor } from '../viz-color.js';
-import { useStore } from '../store.js';
+import { useStore, useCurrentUser } from '../store.js';
+import { visibleGrants } from '../scope.js';
 import { CreateGrantForm } from '../forms.jsx';
 import { useToast } from '../toast.jsx';
 import { TODAY, fiscalYear, fmtMedium, TODAY_FQ_REVERSED } from '../dates.js';
@@ -84,7 +85,10 @@ const SavedViews = ({ apply, activeId }) => {
 };
 
 export const GrantsList = ({ navigate, search, route }) => {
-  const grants = useStore((s) => s.grants);
+  const allGrants = useStore((s) => s.grants);
+  const user = useCurrentUser();
+  // RBAC read-scope: a PI's list holds only the awards they lead.
+  const grants = visibleGrants(user, allGrants);
   const D = { ...DATA, grants };
   const toast = useToast();
   const [showForm, setShowForm] = React.useState(false);
@@ -131,7 +135,11 @@ export const GrantsList = ({ navigate, search, route }) => {
       )}
       <div className="page-head">
         <div>
-          <div className="eyebrow">Portfolio · {filtered.length} of {D.grants.length} grants</div>
+          <div className="eyebrow">
+            {grants.length === allGrants.length
+              ? `Portfolio · ${filtered.length} of ${D.grants.length} grants`
+              : `Acting as ${user.name} · ${filtered.length} of ${grants.length} awards they lead`}
+          </div>
           <h1>Grants.</h1>
           <p className="sub">
             All federal awards under the institutional master agreement. Filter by sponsor, status, or fiscal posture.

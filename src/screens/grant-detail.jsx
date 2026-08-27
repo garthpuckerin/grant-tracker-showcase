@@ -5,6 +5,7 @@ import { fmt, Icon, Status, Donut, Utilization } from '../atoms.jsx';
 import { useStore, useCurrentUser, computeCategoryDeltas, decideReallocation, dismissInsight } from '../store.js';
 import { insightColor } from '../viz-color.js';
 import { ACTION_TAB, ACTION_LABEL } from '../insight-actions.js';
+import { canViewGrant } from '../scope.js';
 import {
   canRequestReallocation,
   canDecideReallocation,
@@ -92,6 +93,28 @@ export const GrantDetail = ({ navigate, route }) => {
 
   const grantTasks = liveTasks.filter(t => t.grantId === grant.id);
   const grantDocs = liveDocs.filter(d => d.grantId === grant.id);
+
+  // RBAC read-scope guard: a PI deep-linking to an award they don't lead
+  // gets the designed access notice, not the data (2 CFR 200.303).
+  const actingUser = useCurrentUser();
+  if (!canViewGrant(actingUser, grant)) {
+    return (
+      <div>
+        <button className="btn-link" style={{ marginBottom: 12 }} onClick={() => navigate({ name: 'grants' })}>
+          ← All grants
+        </button>
+        <div className="empty-state" style={{ marginTop: 40 }}>
+          <div className="kicker" style={{ color: 'var(--alert)' }}>Restricted</div>
+          <p className="serif">This award is outside your assignment</p>
+          <p className="muted">
+            {grant.number} is led by {grant.pi.name}. The acting role
+            ({ROLE_LABEL[actingUser.role]} · {actingUser.name}) can open only
+            awards it leads — switch the acting role for portfolio oversight.
+          </p>
+        </div>
+      </div>
+    );
+  }
 
   return (
     <div>

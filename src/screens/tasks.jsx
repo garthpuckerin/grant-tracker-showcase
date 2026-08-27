@@ -2,13 +2,17 @@
 import React from 'react';
 import { DATA } from '../data.js';
 import { fmt, Icon, Status } from '../atoms.jsx';
-import { useStore, updateTask } from '../store.js';
+import { useStore, useCurrentUser, updateTask } from '../store.js';
+import { scopeByGrant } from '../scope.js';
 import { CreateTaskForm } from '../forms.jsx';
 import { TaskDrawer } from '../task-drawer.jsx';
 import { useToast, MockButton } from '../toast.jsx';
 
 export const Tasks = ({ navigate, search }) => {
-  const tasks = useStore((s) => s.tasks);
+  const allTasks = useStore((s) => s.tasks);
+  const user = useCurrentUser();
+  // RBAC read-scope: a PI works the tasks on the awards they lead.
+  const tasks = scopeByGrant(user, allTasks);
   const D = { ...DATA, tasks };
   const toast = useToast();
   const [showForm, setShowForm] = React.useState(false);

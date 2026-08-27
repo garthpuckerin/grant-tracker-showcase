@@ -15,13 +15,16 @@ import { shiftIso } from '../dates.js';
 
 // Where "Take action" lands per agent: the grant tab that owns the problem.
 import { ACTION_LABEL, insightRoute } from '../insight-actions.js';
+import { visibleGrants, scopeByGrant, scopeInsights } from '../scope.js';
 
 export const Insights = ({ navigate }) => {
   const D = DATA;
   const toast = useToast();
   // Live insights from the store — dismiss removes an insight here, in the
   // topbar bell, the dashboard widget, and the sidebar count at once.
-  const all = useStore((s) => s.insights);
+  const user = useCurrentUser();
+  // RBAC read-scope: a PI sees the signals on the awards they lead.
+  const all = scopeInsights(user, useStore((s) => s.insights));
   // Run the agent sweep for real: ~1.2s of 'analyzing', then the store
   // re-derives the full signal set (re-raising dismissed ones — the
   // conditions behind them are still present in the data).
@@ -165,7 +168,9 @@ export const Compliance = () => {
   // Findings are the source of truth; every score below is derived from them
   // (data.js buildCompliance), so resolving one moves the table, the donut,
   // the dashboard posture, and the grant's rule slice together.
-  const findings = useStore((s) => s.findings);
+  // RBAC read-scope: a PI's compliance posture derives from their awards'
+  // findings only (the framework rule universe is institutional).
+  const findings = scopeByGrant(user, useStore((s) => s.findings));
   const [fwFilter, setFwFilter] = React.useState(null);
   const lastScanAt = useStore((s) => s.lastScanAt);
   const { frameworks, portfolio } = React.useMemo(() => buildCompliance(findings), [findings]);
@@ -455,7 +460,9 @@ export const Reports = () => {
 
 export const Documents = ({ navigate }) => {
   const toast = useToast();
-  const docs = useStore((s) => s.documents);
+  const docsUser = useCurrentUser();
+  // RBAC read-scope: the library shows the acting role's awards.
+  const docs = scopeByGrant(docsUser, useStore((s) => s.documents));
   const D = { ...DATA, documents: docs };
   const [selectedId, setSelectedId] = React.useState(null);
   const [showUpload, setShowUpload] = React.useState(false);
@@ -524,7 +531,11 @@ export const SF425 = ({ navigate }) => {
   // Certify & submit (on the detail) completes a row here.
   const filings = useStore((s) => s.filings);
   const [showNew, setShowNew] = React.useState(false);
-  const rows = filings.map((f) => ({ ...f, g: D.grants[f.gi] || D.grants[0] }));
+  const sfUser = useCurrentUser();
+  // RBAC read-scope: PIs prepare filings on their own awards.
+  const rows = filings
+    .map((f) => ({ ...f, g: D.grants[f.gi] || D.grants[0] }))
+    .filter((r) => visibleGrants(sfUser, [r.g]).length === 1);
   const open = (f) => navigate && navigate({ name: 'sf425detail', filingId: f.id, gi: f.gi, period: f.period, type: f.type, status: f.status, due: f.due });
   return (
     <div>
@@ -651,6 +662,20 @@ export const SF425Detail = ({ navigate, route }) => {
   // The live filing record (status, certification) — found by id, else by
   // award + period (the grant masthead deep-links without an id).
   const filing = filings.find((f) => f.id === route.filingId) || filings.find((f) => f.gi === route.gi && f.period === route.period) || null;
+  // RBAC read-scope guard: a PI can open only filings on awards they lead
+  // (the register is already scoped; this closes the deep-link path).
+  if (visibleGrants(user, [grant]).length !== 1) {
+    return (
+      <div>
+        <button className="btn-link" style={{ marginBottom: 12 }} onClick={() => navigate && navigate({ name: 'sf425' })}>← All filings</button>
+        <div className="empty-state" style={{ marginTop: 40 }}>
+          <div className="kicker" style={{ color: 'var(--alert)' }}>Restricted</div>
+          <p className="serif">This filing is outside your assignment</p>
+          <p className="muted">{grant.number} is led by {grant.pi.name}. Switch the acting role for portfolio oversight.</p>
+        </div>
+      </div>
+    );
+  }
   const status = filing ? filing.status : route.status;
   const certified = status === 'COMPLETE';
   const canCertify = canCertifyReport(user);

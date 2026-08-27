@@ -7,15 +7,23 @@ import { DATA } from './data.js';
 import { fmt } from './atoms.jsx';
 import { Drawer } from './drawer.jsx';
 import { allocateMonth } from './allocate.js';
+import { useCurrentUser } from './store.js';
+import { visibleGrants } from './scope.js';
 
 export const MonthDrawer = ({ month, months, onClose, navigate }) => {
+  const drawerUser = useCurrentUser();
   if (!month) return null;
   const idx = months.findIndex((x) => x === month);
   const prev = idx > 0 ? months[idx - 1] : null;
   const windowTotal = months.reduce((s, x) => s + x.v, 0);
   const delta = prev ? month.v - prev.v : null;
   const rank = 1 + months.filter((x) => x.v > month.v).length;
-  const rows = allocateMonth(month.v, DATA.grants);
+  // Scoped viewers see their awards' rows out of the PORTFOLIO allocation
+  // (month.vAll), so the drawer still cross-foots with the scoped bar total.
+  const vIds = new Set(visibleGrants(drawerUser, DATA.grants).map((g) => g.id));
+  const mine = allocateMonth(month.vAll ?? month.v, DATA.grants).filter((r) => vIds.has(r.grant.id));
+  const mineTotal = mine.reduce((s, r) => s + r.amount, 0);
+  const rows = mine.map((r) => ({ ...r, share: mineTotal > 0 ? r.amount / mineTotal : 0 }));
 
   return (
     <Drawer

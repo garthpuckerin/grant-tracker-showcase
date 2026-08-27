@@ -12,7 +12,21 @@ import { Landing } from './Landing.jsx';
 import { Onboarding } from './Onboarding.jsx';
 import { MobileTabBar } from './mobile-tabs.jsx';
 import { installCardify } from './cardify.js';
-import { useStore } from './store.js';
+
+// Rendered when the acting role lacks an administrative surface.
+const AccessNotice = ({ surface }) => (
+  <div className="empty-state" style={{ marginTop: 40 }}>
+    <div className="kicker" style={{ color: 'var(--alert)' }}>Restricted</div>
+    <p className="serif">{surface} requires an oversight role</p>
+    <p className="muted">
+      Workspace administration is limited to the Administrator and Finance
+      roles under the institution's separation-of-duties policy
+      (2 CFR 200.303). Switch the acting role to continue.
+    </p>
+  </div>
+);
+import { useStore, useCurrentUser } from './store.js';
+import { visibleGrants, scopeByGrant, scopeInsights } from './scope.js';
 
 // Marketing-landing gate key. SESSION-scoped (sessionStorage), so in-session
 // reloads skip the pitch but a fresh visit — including a reveal-day teaser
@@ -139,11 +153,14 @@ const App = () => {
   const liveGrants = useStore((s) => s.grants);
   const liveDocs = useStore((s) => s.documents);
   const liveInsights = useStore((s) => s.insights);
+  // RBAC read-scope: the sidebar counts reflect what the acting role can
+  // actually see (a PI counts only the awards they lead).
+  const actingUser = useCurrentUser();
   const counts = {
-    grants: liveGrants.length,
-    openTasks: liveTasks.filter(t => t.status !== 'COMPLETE').length,
-    docs: liveDocs.length,
-    insights: liveInsights.length,
+    grants: visibleGrants(actingUser, liveGrants).length,
+    openTasks: scopeByGrant(actingUser, liveTasks, liveGrants).filter(t => t.status !== 'COMPLETE').length,
+    docs: scopeByGrant(actingUser, liveDocs, liveGrants).length,
+    insights: scopeInsights(actingUser, liveInsights, liveGrants).length,
   };
 
   const navigate = (r) => setRoute(r);
@@ -169,8 +186,10 @@ const App = () => {
     case 'reports':    screen = <Reports     />; break;
     case 'sf425':      screen = <SF425       navigate={navigate} />; break;
     case 'sf425detail':screen = <SF425Detail navigate={navigate} route={route} />; break;
-    case 'users':      screen = <Members     />; break;
-    case 'settings':   screen = <Settings    />; break;
+    // Workspace administration is an oversight surface (2 CFR 200.303):
+    // a PI deep-linking here gets the designed notice, not the data.
+    case 'users':      screen = actingUser.role === 'PI' ? <AccessNotice surface="Members" /> : <Members />; break;
+    case 'settings':   screen = actingUser.role === 'PI' ? <AccessNotice surface="Settings" /> : <Settings />; break;
     default:           screen = <Dashboard   navigate={navigate} />;
   }
 

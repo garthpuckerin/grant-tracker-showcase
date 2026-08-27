@@ -179,10 +179,15 @@ export const Sidebar = ({ route, navigate, counts, open = false, onClose, onSign
     { id: 'compliance', name: 'Compliance',   icon: 'shield',  count: null },
     { id: 'reports',    name: 'Reports',      icon: 'chart',   count: null },
   ];
+  // PIs keep SF-425 (they prepare filings on their awards) but not the
+  // workspace-administration surfaces (2 CFR 200.303 least-privilege).
+  const sbUser = useCurrentUser();
   const admin = [
     { id: 'sf425', name: 'SF-425 Filings', icon: 'flag',  count: null },
-    { id: 'users', name: 'Members',        icon: 'user',  count: null },
-    { id: 'settings', name: 'Settings',    icon: 'settings', count: null },
+    ...(sbUser.role === 'PI' ? [] : [
+      { id: 'users', name: 'Members',        icon: 'user',  count: null },
+      { id: 'settings', name: 'Settings',    icon: 'settings', count: null },
+    ]),
   ];
   return (
     <aside className={`sidebar ${open ? 'open' : ''}`} role="navigation" aria-label="Primary">

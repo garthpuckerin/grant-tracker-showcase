@@ -4,8 +4,9 @@ import { DATA, buildCompliance } from '../data.js';
 import { fmt, Icon, Donut, Utilization, BarGroup, LineArea } from '../atoms.jsx';
 import { insightColor, utilizationColor } from '../viz-color.js';
 import { ACTION_LABEL, insightRoute } from '../insight-actions.js';
+import { visibleGrants, scopeByGrant, scopeInsights, scopeMonthly } from '../scope.js';
 import { MockButton } from '../toast.jsx';
-import { useStore, dismissInsight } from '../store.js';
+import { useStore, useCurrentUser, dismissInsight } from '../store.js';
 import { MonthDrawer } from '../month-drawer.jsx';
 import { TODAY_MEDIUM, TODAY_FISCAL, TODAY_FQ_REVERSED } from '../dates.js';
 
@@ -15,7 +16,31 @@ export const Dashboard = ({ navigate }) => {
   const liveTasks = useStore((s) => s.tasks);
   const liveInsights = useStore((s) => s.insights);
   const liveFindings = useStore((s) => s.findings);
-  const D = { ...DATA, tasks: liveTasks, insights: liveInsights, compliance: buildCompliance(liveFindings) };
+  // RBAC read-scope (2 CFR 200.303): ADMIN/FINANCE oversee the portfolio; a
+  // PI's dashboard derives EVERY figure from only the awards they lead. The
+  // monthly series scopes through the same per-award allocation the month
+  // drawer shows, so scoped bars still cross-foot to the dollar.
+  const user = useCurrentUser();
+  const D = (() => {
+    const grants = visibleGrants(user, DATA.grants);
+    const agencyBreakdown = (() => {
+      const m = new Map();
+      for (const g of grants) {
+        const e = m.get(g.agencyShort) || { agency: g.agencyShort, count: 0, budget: 0 };
+        m.set(g.agencyShort, { ...e, count: e.count + 1, budget: e.budget + g.budget });
+      }
+      return [...m.values()].sort((a, b) => b.budget - a.budget);
+    })();
+    return {
+      ...DATA,
+      grants,
+      agencyBreakdown,
+      tasks: scopeByGrant(user, liveTasks),
+      insights: scopeInsights(user, liveInsights),
+      monthly: scopeMonthly(user, DATA.monthly),
+      compliance: buildCompliance(scopeByGrant(user, liveFindings)),
+    };
+  })();
   const totalBudget = D.grants.reduce((s, g) => s + g.budget, 0);
   const totalSpent = D.grants.reduce((s, g) => s + g.spent, 0);
   const activeCount = D.grants.filter(g => g.status === 'ACTIVE').length;
@@ -69,7 +94,7 @@ export const Dashboard = ({ navigate }) => {
       <div className="page-head">
         <div>
           <div className="eyebrow">Portfolio Overview · {TODAY_FISCAL} · {TODAY_MEDIUM}</div>
-          <h1>Good morning, Demo.</h1>
+          <h1>Good morning, {user.name.replace(/^Dr\.\s*/, '').split(' ')[0]}.</h1>
           <p className="sub">
             <span style={{ color: 'var(--ink)' }}>{activeCount} active grants</span> across {D.agencyBreakdown.length} federal agencies. Year-to-date utilization is on track at {fmt.pct(utilization, 1)} with {overdue ? <span style={{ color: 'var(--alert)' }}>{overdue} overdue task{overdue > 1 ? 's' : ''}</span> : 'no overdue items'} requiring attention.
           </p>
@@ -85,7 +110,7 @@ export const Dashboard = ({ navigate }) => {
         <div className="metric clickable" role="button" tabIndex={0} aria-label="Active awards — open the grants list" onClick={() => navigate({ name: 'grants' })} onKeyDown={(e) => { if (e.key === 'Enter' || e.key === ' ') { e.preventDefault(); navigate({ name: 'grants' }); } }}>
           <div className="lbl">Active Awards</div>
           <div className="val">{activeCount}<span className="unit">of {D.grants.length}</span></div>
-          <div className="delta up">▲ 2 new this quarter</div>
+          <div className="delta up">{draftCount > 0 ? `▲ ${draftCount} in pre-award` : 'all awards active'}</div>
         </div>
         <div className="metric clickable" role="button" tabIndex={0} aria-label="Total awarded — open the grants list" onClick={() => navigate({ name: 'grants' })} onKeyDown={(e) => { if (e.key === 'Enter' || e.key === ' ') { e.preventDefault(); navigate({ name: 'grants' }); } }}>
           <div className="lbl">Total Awarded</div>
