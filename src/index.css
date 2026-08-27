@@ -139,7 +139,7 @@ button { font-family: inherit; cursor: pointer; }
 .sidebar {
   border-right: 1px solid var(--rule);
   background: var(--paper);
-  padding: 22px 0 0 0;
+  padding: 0;
   display: flex;
   flex-direction: column;
   position: sticky;
@@ -147,12 +147,15 @@ button { font-family: inherit; cursor: pointer; }
   height: 100vh;
 }
 .sidebar-brand {
-  padding: 0 20px 18px 20px;
+  height: 57px;
+  box-sizing: border-box;
+  padding: 0 20px;
   border-bottom: 1px solid var(--rule);
   display: flex;
-  align-items: baseline;
+  align-items: center;
   gap: 10px;
 }
+.sidebar-brand + .sidebar-section { padding-top: 16px; }
 .sidebar-brand .mark {
   font-family: var(--font-display);
   font-size: 28px;
@@ -248,7 +251,11 @@ button { font-family: inherit; cursor: pointer; }
 
 /* Topbar */
 .topbar {
-  height: 56px;
+  /* One shell-header height everywhere: the bottom rule sits at exactly
+     57px, matching .sidebar-brand, at every tier. */
+  height: auto;
+  min-height: 57px;
+  box-sizing: border-box;
   border-bottom: 1px solid var(--rule);
   background: var(--paper);
   position: sticky;
@@ -1209,8 +1216,8 @@ button { font-family: inherit; cursor: pointer; }
    ============================================================ */
 @media (min-width: 600px) and (max-width: 1023px) {
   .app { grid-template-columns: 68px 1fr; }
-  .sidebar { width: 68px; padding-top: 14px; overflow: visible; }
-  .sidebar-brand { justify-content: center; padding: 0 0 14px; }
+  .sidebar { width: 68px; padding-top: 0; overflow: visible; }
+  .sidebar-brand { justify-content: center; padding: 0; }
   .sidebar-brand .word, .sidebar-brand .ver,
   .sidebar-section-label,
   .sidebar-item .si-label,
@@ -1240,7 +1247,6 @@ button { font-family: inherit; cursor: pointer; }
   .sidebar-user { flex-direction: column; align-items: center; gap: 8px; padding: 12px 0; }
   .sidebar-user > button:first-child { flex: 0 0 auto; justify-content: center; }
   .sidebar-user > button:first-child > svg { display: none; }
-  .sidebar-user [role="menu"] { left: 56px; right: auto; bottom: 8px; width: 240px; }
 }
 
 /* ≥1024 desktop floor: the sidebar is persistent but USER-COLLAPSIBLE to the
@@ -1256,8 +1262,8 @@ button { font-family: inherit; cursor: pointer; }
   .sidebar-collapse:hover { color: var(--ink); border-color: var(--rule-strong); }
 
   .app.nav-collapsed { grid-template-columns: 68px 1fr; }
-  .app.nav-collapsed .sidebar { width: 68px; padding-top: 14px; overflow: visible; }
-  .app.nav-collapsed .sidebar-brand { justify-content: center; padding: 0 0 14px; }
+  .app.nav-collapsed .sidebar { width: 68px; padding-top: 0; overflow: visible; }
+  .app.nav-collapsed .sidebar-brand { justify-content: center; padding: 0; }
   .app.nav-collapsed .sidebar-brand .word, .app.nav-collapsed .sidebar-brand .ver,
   .app.nav-collapsed .sidebar-section-label,
   .app.nav-collapsed .sidebar-item .si-label,
@@ -1287,7 +1293,6 @@ button { font-family: inherit; cursor: pointer; }
   .app.nav-collapsed .sidebar-user { flex-direction: column; align-items: center; gap: 8px; padding: 12px 0; }
   .app.nav-collapsed .sidebar-user > button:first-child { flex: 0 0 auto; justify-content: center; }
   .app.nav-collapsed .sidebar-user > button:first-child > svg { display: none; }
-  .app.nav-collapsed .sidebar-user [role="menu"] { left: 56px; right: auto; bottom: 8px; width: 240px; }
   .app.nav-collapsed .sidebar-collapse { right: -14px; }
 }
 
@@ -2201,7 +2206,7 @@ select.field-input { cursor: pointer; }
   .sidebar-item::after { display: none; }
   .sidebar-item { height: 38px; margin: 1px auto; }
   .sidebar-section { padding: 2px 8px; }
-  .sidebar-brand { padding: 0 0 8px; }
+  .sidebar-brand { padding: 0; }
   .sidebar-user { padding: 8px 0; }
 }
 

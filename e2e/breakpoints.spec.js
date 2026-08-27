@@ -142,3 +142,42 @@ test('844×390 (phone landscape): the rail nav is reachable and the reallocation
   // The submit action is reachable by scrolling the modal body.
   await expect(page.getByRole('button', { name: 'Submit request' })).toBeVisible()
 })
+
+test('shell rules align and the role switcher opens fully visible in the rail', async ({ page }) => {
+  for (const width of [1366, 820]) {
+    await page.setViewportSize({ width, height: 900 })
+    await enterApp(page, { name: 'dashboard' })
+    await page.goto('/')
+    await expect(page.locator('.sidebar-item').first()).toBeVisible()
+    const rules = await page.evaluate(() => ({
+      brand: Math.round(document.querySelector('.sidebar-brand').getBoundingClientRect().bottom),
+      topbar: Math.round(document.querySelector('.topbar').getBoundingClientRect().bottom),
+    }))
+    expect(rules.brand).toBe(rules.topbar)
+  }
+
+  // Rail tier: the switcher menu opens on-screen and actually switches roles.
+  await page.setViewportSize({ width: 820, height: 1180 })
+  await page.goto('/')
+  await expect(page.locator('.sidebar-item').first()).toBeVisible()
+  await page.getByTitle(/Switch acting role/).click()
+  const menu = page.locator('.sidebar-user [role="menu"]')
+  await expect(menu).toBeVisible()
+  const box = await menu.boundingBox()
+  expect(box.x).toBeGreaterThanOrEqual(0)
+  expect(box.y).toBeGreaterThanOrEqual(0)
+  expect(box.x + box.width).toBeLessThanOrEqual(820)
+  expect(box.y + box.height).toBeLessThanOrEqual(1180)
+  await page.getByRole('menuitem').filter({ hasText: 'Thompson' }).click()
+  await expect(page.locator('.sidebar-user')).toContainText('LT')
+
+  // Short-height rail (the clipping case): menu still fully visible.
+  await page.setViewportSize({ width: 844, height: 390 })
+  await page.goto('/')
+  await expect(page.locator('.sidebar-item').first()).toBeVisible()
+  await page.getByTitle(/Switch acting role/).click()
+  await expect(menu).toBeVisible()
+  const box2 = await menu.boundingBox()
+  expect(box2.y).toBeGreaterThanOrEqual(0)
+  expect(box2.y + box2.height).toBeLessThanOrEqual(390)
+})

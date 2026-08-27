@@ -142,13 +142,15 @@ export const Donut = ({ pct, size = 140, label, valueText, color }) => {
 };
 
 // Sparkline
-export const Sparkline = ({ data, height = 60, fillColor = 'oklch(0.95 0.01 80)', strokeColor = 'var(--ink)' }) => {
+export const Sparkline = ({ data, height = 60, fillColor = null, strokeColor = 'var(--ink)' }) => {
   const { on } = useVizColor();
   // Color mode: stroke follows the series trend (rising = accent, falling =
   // indigo) and the area becomes a translucent wash of that color.
   const trendCol = on ? trendColor(data) : null;
   const stroke = trendCol ?? strokeColor;
-  const fill = trendCol ? washOf(trendCol) : fillColor;
+  // No hardcoded light fill: default to a wash of the stroke so the area
+  // reads correctly in every theme (the literal broke dark mode).
+  const fill = trendCol ? washOf(trendCol) : (fillColor || washOf(stroke, 12));
   const w = 600;
   const max = Math.max(...data) * 1.1;
   const min = 0;

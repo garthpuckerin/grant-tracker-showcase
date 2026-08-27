@@ -16,6 +16,7 @@ const SWITCH_IDS = ['u1', 'u2', 'u5'];
 const RoleSwitcher = ({ onSignOut }) => {
   const user = useCurrentUser();
   const [open, setOpen] = React.useState(false);
+  const [menuPos, setMenuPos] = React.useState(null);
   const ref = React.useRef(null);
 
   React.useEffect(() => {
@@ -37,7 +38,17 @@ const RoleSwitcher = ({ onSignOut }) => {
     <div className="sidebar-user" ref={ref} style={{ position: 'relative' }}>
       <button
         type="button"
-        onClick={() => setOpen((o) => !o)}
+        onClick={() => {
+          if (!open && ref.current) {
+            const r = ref.current.getBoundingClientRect();
+            setMenuPos({
+              left: Math.max(8, Math.min(r.left, window.innerWidth - 256)),
+              bottom: Math.max(8, window.innerHeight - r.top + 8),
+              width: Math.max(240, Math.min(Math.round(r.width), 300)),
+            });
+          }
+          setOpen((o) => !o);
+        }}
         aria-haspopup="menu"
         aria-expanded={open}
         title="Switch acting role — changes what you can do"
@@ -64,7 +75,7 @@ const RoleSwitcher = ({ onSignOut }) => {
       {open && (
         <div
           role="menu"
-          style={{ position: 'absolute', bottom: 'calc(100% + 8px)', left: 0, right: 0, background: 'var(--surface)', border: '1px solid var(--rule-strong)', borderRadius: 2, boxShadow: '0 10px 34px rgba(0,0,0,0.20)', zIndex: 60, overflow: 'hidden' }}
+          style={{ position: 'fixed', left: menuPos?.left ?? 8, bottom: menuPos?.bottom ?? 80, width: menuPos?.width ?? 240, background: 'var(--surface)', border: '1px solid var(--rule-strong)', borderRadius: 2, boxShadow: '0 10px 34px rgba(0,0,0,0.28)', zIndex: 90, overflow: 'hidden' }}
         >
           <div className="kicker" style={{ padding: '10px 12px 6px' }}>Viewing as</div>
           {options.map((u) => {
