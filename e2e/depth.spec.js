@@ -215,3 +215,26 @@ test('grant analysis card is live: signals dismiss in place and rows switch tabs
   await card.getByRole('button', { name: /burn forecast/ }).click()
   await expect(page.locator('.tabs button.on')).toHaveText('budget')
 })
+
+test('running the agents re-raises dismissed signals whose conditions persist', async ({ page }) => {
+  await enterApp(page, { name: 'insights' })
+  await page.goto('/')
+  await expect(sidebarCount(page, 'AI Insights')).toHaveText('9')
+
+  // Triage away a signal, then run the sweep — the condition behind it is
+  // still in the data, so the agents legitimately re-raise it.
+  await page.getByRole('button', { name: 'Dismiss' }).first().click()
+  await expect(sidebarCount(page, 'AI Insights')).toHaveText('8')
+  await page.getByRole('button', { name: 'Run agents' }).click()
+  await expect(page.getByRole('button', { name: 'Analyzing…' })).toBeVisible()
+  await expect(sidebarCount(page, 'AI Insights')).toHaveText('9')
+  await expect(page.locator('.toast-flag')).toContainText('re-raised')
+
+  // Dismiss everything → the empty state offers the same recovery loop.
+  for (let n = 9; n >= 1; n--) {
+    await page.getByRole('button', { name: 'Dismiss' }).first().click()
+  }
+  await expect(page.getByText('No open insights')).toBeVisible()
+  await page.locator('.empty-state').getByRole('button', { name: 'Run agents' }).click()
+  await expect(page.locator('.insight-row')).toHaveCount(9)
+})

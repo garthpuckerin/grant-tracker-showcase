@@ -2,7 +2,7 @@
 import React from 'react';
 import { DATA, buildCompliance } from '../data.js';
 import { fmt, Icon, Status, Donut, Sparkline, BarGroup, LineArea } from '../atoms.jsx';
-import { useStore, useCurrentUser, dismissInsight, resolveFinding, markScanned, certifyFiling, addFiling } from '../store.js';
+import { useStore, useCurrentUser, dismissInsight, rescanInsights, resolveFinding, markScanned, certifyFiling, addFiling } from '../store.js';
 import { canCertifyReport, certifyDeniedReason, ROLE_LABEL } from '../rbac.js';
 import { DocumentDrawer, UploadDocumentForm } from '../document-drawer.jsx';
 import { InviteMemberForm, NewFilingForm } from '../admin-forms.jsx';
@@ -22,6 +22,24 @@ export const Insights = ({ navigate }) => {
   // Live insights from the store — dismiss removes an insight here, in the
   // topbar bell, the dashboard widget, and the sidebar count at once.
   const all = useStore((s) => s.insights);
+  // Run the agent sweep for real: ~1.2s of 'analyzing', then the store
+  // re-derives the full signal set (re-raising dismissed ones — the
+  // conditions behind them are still present in the data).
+  const [analyzing, setAnalyzing] = React.useState(false);
+  const runAgents = () => {
+    if (analyzing) return;
+    setAnalyzing(true);
+    setTimeout(() => {
+      const reRaised = rescanInsights();
+      setAnalyzing(false);
+      toast(
+        reRaised > 0
+          ? `Agent sweep complete — ${reRaised} dismissed signal${reRaised === 1 ? '' : 's'} re-raised; the underlying conditions persist.`
+          : 'Agent sweep complete — no new findings; all open signals confirmed.',
+        'indigo', 'Agents',
+      );
+    }, 1200);
+  };
   const [agentFilter, setAgentFilter] = React.useState(null);
   const shown = agentFilter ? all.filter((i) => i.agent === agentFilter) : all;
   const dismiss = (i) => { dismissInsight(i.id); toast('Insight dismissed.'); };
@@ -50,6 +68,9 @@ export const Insights = ({ navigate }) => {
         </div>
         <div className="ph-actions">
           <MockButton className="btn ghost" icon="settings" label="Agent settings" />
+          <button className="btn" onClick={runAgents} disabled={analyzing} aria-busy={analyzing}>
+            <Icon name="play" size={12} /> {analyzing ? 'Analyzing…' : 'Run agents'}
+          </button>
           <MockButton className="btn accent" icon="sparkle" label="Ask anything" message="The assistant is mocked in this demo — it runs on the live model in the production build." />
         </div>
       </div>
@@ -77,7 +98,10 @@ export const Insights = ({ navigate }) => {
         <div className="empty-state">
           <div className="kicker">All clear</div>
           <p className="serif">No open insights</p>
-          <p className="muted">Every finding has been dismissed or actioned. The agents keep analyzing the portfolio and will surface new ones here.</p>
+          <p className="muted">Every finding has been dismissed or actioned. Run the agents to re-sweep the portfolio — signals whose conditions persist will be re-raised.</p>
+          <button className="btn" style={{ marginTop: 14 }} onClick={runAgents} disabled={analyzing}>
+            <Icon name="play" size={12} /> {analyzing ? 'Analyzing…' : 'Run agents'}
+          </button>
         </div>
       )}
       {shown.length === 0 && all.length > 0 && (

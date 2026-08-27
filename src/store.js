@@ -111,6 +111,17 @@ export const dismissInsight = (id) => {
   emit();
 };
 
+// Re-run the agent sweep. Signals are DERIVED from conditions still present in
+// the data (an overdue report stays overdue), so a fresh sweep legitimately
+// re-raises previously dismissed ones — dismissal is triage, not resolution.
+// Returns how many signals the sweep re-raised.
+export const rescanInsights = () => {
+  const reRaised = DATA.insights.length - state.insights.length;
+  state = { ...state, insights: DATA.insights, lastSweepAt: Date.now() };
+  emit();
+  return reRaised;
+};
+
 // Prepend an uploaded document immutably.
 export const addDocument = (doc) => {
   state = { ...state, documents: [doc, ...state.documents] };
