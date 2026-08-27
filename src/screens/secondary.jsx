@@ -14,7 +14,7 @@ import { useToast, MockButton } from '../toast.jsx';
 import { shiftIso } from '../dates.js';
 
 // Where "Take action" lands per agent: the grant tab that owns the problem.
-const ACTION_TAB = { BUDGET: 'budget', OPTIMIZE: 'budget', COMPLIANCE: 'compliance', DEADLINE: 'tasks', WRITER: 'documents' };
+import { ACTION_LABEL, insightRoute } from '../insight-actions.js';
 
 export const Insights = ({ navigate }) => {
   const D = DATA;
@@ -25,10 +25,7 @@ export const Insights = ({ navigate }) => {
   const [agentFilter, setAgentFilter] = React.useState(null);
   const shown = agentFilter ? all.filter((i) => i.agent === agentFilter) : all;
   const dismiss = (i) => { dismissInsight(i.id); toast('Insight dismissed.'); };
-  const takeAction = (i, grant) => {
-    if (grant) navigate({ name: 'grant', id: grant.id, grant, tab: ACTION_TAB[i.agent] || 'overview' });
-    else navigate({ name: i.agent === 'WRITER' ? 'documents' : 'reports' });
-  };
+  const takeAction = (i, grant) => navigate(insightRoute(i, grant));
 
   // Agent strip colors come from the shared agent→color map so the dashboard
   // widget, this screen, and the topbar notifications all agree.
@@ -96,7 +93,7 @@ export const Insights = ({ navigate }) => {
           const color = insightColor(i);
           return (
             <div key={i.id} className="insight-row" role="button" tabIndex={0}
-              aria-label={`Take action — ${i.title}`}
+              aria-label={`${ACTION_LABEL[i.agent] || 'Take action'} — ${i.title}`}
               onClick={() => takeAction(i, grant)}
               onKeyDown={(e) => { if (e.key === 'Enter') takeAction(i, grant); }}
               style={{
@@ -128,7 +125,7 @@ export const Insights = ({ navigate }) => {
               </div>
               <div className="insight-actions" style={{ display: 'flex', flexDirection: 'column', gap: 6 }}>
                 <button className="btn ghost" style={{ height: 28, fontSize: 11 }} onClick={(e) => { e.stopPropagation(); dismiss(i); }}>Dismiss</button>
-                <button className="btn" style={{ height: 28, fontSize: 11 }} onClick={(e) => { e.stopPropagation(); takeAction(i, grant); }}>Take action</button>
+                <button className="btn" style={{ height: 28, fontSize: 11 }} onClick={(e) => { e.stopPropagation(); takeAction(i, grant); }}>{ACTION_LABEL[i.agent] || 'Take action'}</button>
               </div>
             </div>
           );

@@ -2,7 +2,9 @@
 import React from 'react';
 import { DATA, buildCompliance } from '../data.js';
 import { fmt, Icon, Status, Donut, Utilization } from '../atoms.jsx';
-import { useStore, useCurrentUser, computeCategoryDeltas, decideReallocation } from '../store.js';
+import { useStore, useCurrentUser, computeCategoryDeltas, decideReallocation, dismissInsight } from '../store.js';
+import { insightColor } from '../viz-color.js';
+import { ACTION_TAB, ACTION_LABEL } from '../insight-actions.js';
 import {
   canRequestReallocation,
   canDecideReallocation,
@@ -169,6 +171,12 @@ const yearElapsedFrac = (grant, n) => {
 };
 
 const OverviewTab = ({ grant, years, lineItems, grantTasks, navigate, setTab, setSelectedYear }) => {
+  // LIVE feeds for the Grant Analysis card: this grant's open insights and its
+  // most recent document, from the same store the Insights screen and the
+  // dashboard widget read — dismissing here re-derives everywhere.
+  const grantInsights = useStore((s) => s.insights).filter((i) => i.grantId === grant.id);
+  const liveDocs = useStore((s) => s.documents).filter((d) => d.grantId === grant.id);
+  const latestDoc = liveDocs.length ? [...liveDocs].sort((a, b) => (a.date < b.date ? 1 : -1))[0] : null;
   const budget = lineItems.reduce((s, l) => s + l.budgeted, 0);
   const spent = lineItems.reduce((s, l) => s + l.spent, 0);
   const encumbered = lineItems.reduce((s, l) => s + l.encumbered, 0);
@@ -256,7 +264,7 @@ const OverviewTab = ({ grant, years, lineItems, grantTasks, navigate, setTab, se
                 const bal = l.budgeted - l.spent - l.encumbered;
                 const pct = l.spent / l.budgeted;
                 return (
-                  <tr key={`${l.cat}-${li}`}>
+                  <tr key={`${l.cat}-${li}`} className="row-h" onClick={() => { setSelectedYear(grant.year); setTab('budget'); }}>
                     <td className="mono" style={{ fontSize: 11, color: 'var(--ink-2)' }}>{l.cat}</td>
                     <td className="muted" style={{ fontSize: 12.5 }}>{l.desc}</td>
                     <td className="num r">{fmt.money(l.budgeted)}</td>
@@ -283,48 +291,84 @@ const OverviewTab = ({ grant, years, lineItems, grantTasks, navigate, setTab, se
           </div>
         </div>
 
-        {/* AI synthesis */}
+        {/* AI synthesis — LIVE. Signal rows are this grant's open insights from
+            the store (dismissing one re-derives the Insights screen, the bell,
+            the sidebar count, and the dashboard widget). The BUDGET and
+            DOCUMENT rows are DERIVED from the ledger and the document library —
+            the previous card asserted hardcoded prose the clock falsified. */}
         <div className="card">
           <div className="card-head">
             <div>
               <div className="eyebrow" style={{ marginBottom: 6 }}>
-                <span style={{ display: 'inline-block', width: 6, height: 6, background: 'var(--accent)', borderRadius: '50%', marginRight: 6, verticalAlign: 'middle' }}></span>
+                <span className="live-dot"></span>
                 Compliance + Budget + Document agents
               </div>
               <div className="card-title">Grant Analysis</div>
             </div>
-            <span className="kicker">Updated 12m ago</span>
+            <span className="kicker">Live · {grantInsights.length} open signal{grantInsights.length === 1 ? '' : 's'}</span>
           </div>
           <div className="card-body" style={{ padding: 0 }}>
             <div className="list">
-              <div className="row" style={{ alignItems: 'flex-start', gap: 16 }}>
-                <div style={{ minWidth: 60 }} className="kicker">DEADLINE</div>
-                <div style={{ flex: 1 }}>
-                  <div style={{ fontSize: 13.5, marginBottom: 4, fontWeight: 500 }}>Q1 progress report due in 5 days</div>
-                  <div className="muted" style={{ fontSize: 12.5, lineHeight: 1.5 }}>Programmatic narrative is 62% drafted. Budget variance section pending PI sign-off. <button className="btn-link" style={{ padding: 0, textDecoration: 'underline', textDecorationColor: 'var(--rule-strong)' }} onClick={() => setTab('tasks')}>Open in workspace →</button></div>
-                </div>
-              </div>
-              <div className="row" style={{ alignItems: 'flex-start', gap: 16 }}>
-                <div style={{ minWidth: 60, color: 'var(--indigo)' }} className="kicker">POLICY</div>
-                <div style={{ flex: 1 }}>
-                  <div style={{ fontSize: 13.5, marginBottom: 4, fontWeight: 500 }}>2 CFR 200 §200.430 — time & effort certification overdue</div>
-                  <div className="muted" style={{ fontSize: 12.5, lineHeight: 1.5 }}>PI and one co-PI certifications for FY25 H1 have not been submitted. Required for federal audit readiness.</div>
-                </div>
-              </div>
-              <div className="row" style={{ alignItems: 'flex-start', gap: 16 }}>
+              {grantInsights.map((i) => {
+                const act = () => setTab(ACTION_TAB[i.agent] || 'overview');
+                return (
+                  <div className="row row-h" key={i.id} role="button" tabIndex={0}
+                    aria-label={`${ACTION_LABEL[i.agent] || 'Open'} — ${i.title}`}
+                    style={{ alignItems: 'flex-start', gap: 16, cursor: 'pointer' }}
+                    onClick={act} onKeyDown={(e) => { if (e.key === 'Enter') act(); }}>
+                    <div style={{ minWidth: 60, color: insightColor(i) }} className="kicker">{i.agent}</div>
+                    <div style={{ flex: 1 }}>
+                      <div style={{ fontSize: 13.5, marginBottom: 4, fontWeight: 500 }}>{i.title}</div>
+                      <div className="muted" style={{ fontSize: 12.5, lineHeight: 1.5 }}>{i.body}</div>
+                      <div style={{ display: 'flex', gap: 14, marginTop: 6 }}>
+                        <button className="btn-link" style={{ padding: 0, fontSize: 11 }} onClick={(e) => { e.stopPropagation(); act(); }}>{ACTION_LABEL[i.agent] || 'Open'} →</button>
+                        <button className="btn-link" style={{ padding: 0, fontSize: 11, color: 'var(--ink-3)' }} onClick={(e) => { e.stopPropagation(); dismissInsight(i.id); }}>Dismiss</button>
+                      </div>
+                    </div>
+                  </div>
+                );
+              })}
+              <div className="row row-h" role="button" tabIndex={0} aria-label="Review budget — burn forecast"
+                style={{ alignItems: 'flex-start', gap: 16, cursor: 'pointer' }}
+                onClick={() => setTab('budget')} onKeyDown={(e) => { if (e.key === 'Enter') setTab('budget'); }}>
                 <div style={{ minWidth: 60, color: 'var(--fund)' }} className="kicker">BUDGET</div>
                 <div style={{ flex: 1 }}>
-                  <div style={{ fontSize: 13.5, marginBottom: 4, fontWeight: 500 }}>Personnel encumbrances pacing on plan</div>
-                  <div className="muted" style={{ fontSize: 12.5, lineHeight: 1.5 }}>Burn rate suggests Year 2 will close at 96% of award. No reallocation needed at this time.</div>
+                  {(() => {
+                    // Committed-pace projection — the same derivation family as
+                    // the Budget tab's variance card: (spent + encumbered) as a
+                    // share of the year award, scaled by how far into the year
+                    // window we are. A spent-only run rate understates awards
+                    // whose commitments ride in encumbrances.
+                    const elapsedFrac = yearElapsedFrac(grant, grant.year);
+                    const committed = yearSpent + encumbered;
+                    const proj = elapsedFrac > 0.05 ? Math.min(1.5, (committed / yearAward) / elapsedFrac) : 0;
+                    const band = proj > 1.05
+                      ? 'over plan; consider a reallocation before year end'
+                      : proj >= 0.7 ? 'pacing on plan' : 'under plan; carry-forward or acceleration may apply';
+                    return (
+                      <>
+                        <div style={{ fontSize: 13.5, marginBottom: 4, fontWeight: 500 }}>
+                          Year {grant.year} projected to close at {fmt.pct(proj, 0)} of the annual award
+                        </div>
+                        <div className="muted" style={{ fontSize: 12.5, lineHeight: 1.5 }}>
+                          {fmt.money(yearSpent, { compact: true })} spent + {fmt.money(encumbered, { compact: true })} encumbered with {monthsLeft} month{monthsLeft === 1 ? '' : 's'} remaining — {band}. Review the ledger →
+                        </div>
+                      </>
+                    );
+                  })()}
                 </div>
               </div>
-              <div className="row" style={{ alignItems: 'flex-start', gap: 16 }}>
-                <div style={{ minWidth: 60 }} className="kicker">DOCUMENT</div>
-                <div style={{ flex: 1 }}>
-                  <div style={{ fontSize: 13.5, marginBottom: 4, fontWeight: 500 }}>Subaward — State A&M signed Feb 19</div>
-                  <div className="muted" style={{ fontSize: 12.5, lineHeight: 1.5 }}>Quarterly invoicing schedule synced; next subrecipient invoice expected May 30.</div>
+              {latestDoc && (
+                <div className="row row-h" role="button" tabIndex={0} aria-label="Open documents — latest file"
+                  style={{ alignItems: 'flex-start', gap: 16, cursor: 'pointer' }}
+                  onClick={() => setTab('documents')} onKeyDown={(e) => { if (e.key === 'Enter') setTab('documents'); }}>
+                  <div style={{ minWidth: 60 }} className="kicker">DOCUMENT</div>
+                  <div style={{ flex: 1 }}>
+                    <div style={{ fontSize: 13.5, marginBottom: 4, fontWeight: 500 }}>{latestDoc.name} · added {fmt.date(latestDoc.date.slice(0, 10))}</div>
+                    <div className="muted" style={{ fontSize: 12.5, lineHeight: 1.5 }}>Most recent file in this award's library ({latestDoc.type} · {latestDoc.size} · {latestDoc.by.name}). Open the document set →</div>
+                  </div>
                 </div>
-              </div>
+              )}
             </div>
           </div>
         </div>

@@ -3,8 +3,9 @@ import React from 'react';
 import { DATA, buildCompliance } from '../data.js';
 import { fmt, Icon, Donut, Utilization, BarGroup, LineArea } from '../atoms.jsx';
 import { insightColor, utilizationColor } from '../viz-color.js';
+import { ACTION_LABEL, insightRoute } from '../insight-actions.js';
 import { MockButton } from '../toast.jsx';
-import { useStore } from '../store.js';
+import { useStore, dismissInsight } from '../store.js';
 import { MonthDrawer } from '../month-drawer.jsx';
 import { TODAY_MEDIUM, TODAY_FISCAL, TODAY_FQ_REVERSED } from '../dates.js';
 
@@ -174,7 +175,7 @@ export const Dashboard = ({ navigate }) => {
           <div className="card-head">
             <div>
               <div className="eyebrow" style={{ marginBottom: 6 }}>
-                <span style={{ display: 'inline-block', width: 6, height: 6, background: 'var(--accent)', borderRadius: '50%', marginRight: 6, verticalAlign: 'middle' }}></span>
+                <span className="live-dot"></span>
                 Multi-Agent Synthesis · Live
               </div>
               <div className="card-title">AI Insights</div>
@@ -183,16 +184,44 @@ export const Dashboard = ({ navigate }) => {
           </div>
           <div className="card-body" style={{ padding: 0 }}>
             <div className="list">
-              {D.insights.slice(0, 4).map(i => (
-                <div className="row" key={i.id} style={{ padding: '14px 18px', alignItems: 'flex-start' }}>
-                  <div style={{ width: 4, alignSelf: 'stretch', background: insightColor(i), flexShrink: 0 }}></div>
-                  <div style={{ flex: 1 }}>
-                    <div className="kicker" style={{ marginBottom: 4 }}>{i.agent} · {i.severity}</div>
-                    <div style={{ fontSize: 13, fontWeight: 500, lineHeight: 1.35, marginBottom: 4 }}>{i.title}</div>
-                    <div className="muted" style={{ fontSize: 12, lineHeight: 1.5 }}>{i.body}</div>
-                  </div>
+              {D.insights.length === 0 && (
+                <div className="row" style={{ padding: '24px 18px' }}>
+                  <span className="muted" style={{ fontSize: 13 }}>
+                    All clear — no open agent findings. New signals surface here as the agents raise them.
+                  </span>
                 </div>
-              ))}
+              )}
+              {D.insights.slice(0, 4).map(i => {
+                const grant = D.grants.find(g => g.id === i.grantId);
+                const open = () => navigate(insightRoute(i, grant));
+                return (
+                  <div
+                    className="row row-h"
+                    key={i.id}
+                    role="button"
+                    tabIndex={0}
+                    aria-label={`${ACTION_LABEL[i.agent] || 'Open'} — ${i.title}`}
+                    style={{ padding: '14px 18px', alignItems: 'flex-start', cursor: 'pointer' }}
+                    onClick={open}
+                    onKeyDown={(e) => { if (e.key === 'Enter') open(); }}
+                  >
+                    <div style={{ width: 4, alignSelf: 'stretch', background: insightColor(i), flexShrink: 0 }}></div>
+                    <div style={{ flex: 1 }}>
+                      <div className="kicker" style={{ marginBottom: 4 }}>{i.agent} · {i.severity}</div>
+                      <div style={{ fontSize: 13, fontWeight: 500, lineHeight: 1.35, marginBottom: 4 }}>{i.title}</div>
+                      <div className="muted" style={{ fontSize: 12, lineHeight: 1.5 }}>{i.body}</div>
+                      <div style={{ display: 'flex', gap: 14, marginTop: 8 }}>
+                        <button className="btn-link" style={{ padding: 0, fontSize: 11 }} onClick={(e) => { e.stopPropagation(); open(); }}>
+                          {ACTION_LABEL[i.agent] || 'Open'} →
+                        </button>
+                        <button className="btn-link" style={{ padding: 0, fontSize: 11, color: 'var(--ink-3)' }} onClick={(e) => { e.stopPropagation(); dismissInsight(i.id); }}>
+                          Dismiss
+                        </button>
+                      </div>
+                    </div>
+                  </div>
+                );
+              })}
             </div>
           </div>
         </div>

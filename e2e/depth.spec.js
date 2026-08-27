@@ -66,7 +66,7 @@ test('dismissing an insight removes it from the list, the sidebar count, and the
 
   // "Take action" on a COMPLIANCE insight deep-links to that grant's Compliance tab.
   const complianceRow = page.locator('.insight-row').filter({ hasText: '2 CFR 200 §200.430' })
-  await complianceRow.getByRole('button', { name: 'Take action' }).click()
+  await complianceRow.getByRole('button', { name: 'Review compliance' }).click()
   await expect(page.locator('.tabs button.on')).toHaveText('compliance')
 })
 
@@ -182,4 +182,36 @@ test('white-glove: surfaces that look clickable act — insight rows, budget lin
   await page.goto('/')
   await page.locator('table.ledger tbody tr.row-h').first().click()
   await expect(page.locator('.toast-flag')).toContainText('read-only')
+})
+
+test('dashboard insights act inline: dismiss re-derives the badge, a row deep-links', async ({ page }) => {
+  await enterApp(page, { name: 'dashboard' })
+  await page.goto('/')
+  await expect(sidebarCount(page, 'AI Insights')).toHaveText('9')
+
+  // Dismiss straight from the landing page — no trip to the AI screen.
+  const widget = page.locator('.card').filter({ hasText: 'AI Insights' })
+  await widget.getByRole('button', { name: 'Dismiss' }).first().click()
+  await expect(sidebarCount(page, 'AI Insights')).toHaveText('8')
+
+  // The row itself deep-links to the related grant's relevant tab.
+  await widget.locator('.row.row-h').first().click()
+  await expect(page.locator('.tabs button.on')).toBeVisible()
+})
+
+test('grant analysis card is live: signals dismiss in place and rows switch tabs', async ({ page }) => {
+  await enterApp(page, { name: 'grant', id: '1' })
+  await page.goto('/')
+  const card = page.locator('.card').filter({ hasText: 'Grant Analysis' })
+  await expect(card).toContainText('open signal')
+  await expect(card).toContainText('projected to close at')
+
+  // Dismissing a signal here re-derives the sidebar count too.
+  await expect(sidebarCount(page, 'AI Insights')).toHaveText('9')
+  await card.getByRole('button', { name: 'Dismiss' }).first().click()
+  await expect(sidebarCount(page, 'AI Insights')).toHaveText('8')
+
+  // The derived burn-forecast row opens the budget ledger.
+  await card.getByRole('button', { name: /burn forecast/ }).click()
+  await expect(page.locator('.tabs button.on')).toHaveText('budget')
 })

@@ -771,6 +771,15 @@ button { font-family: inherit; cursor: pointer; }
 }
 .ledger tr:last-child td { border-bottom: 0; }
 .ledger tr.row-h { cursor: pointer; }
+.list .row.row-h { cursor: pointer; }
+.list .row.row-h:hover { background: var(--paper-tint); }
+.live-dot {
+  display: inline-block; width: 6px; height: 6px; background: var(--accent);
+  border-radius: 50%; margin-right: 6px; vertical-align: middle;
+  animation: live-pulse 2.4s ease-in-out infinite;
+}
+@keyframes live-pulse { 0%, 100% { opacity: 1; } 50% { opacity: 0.35; } }
+@media (prefers-reduced-motion: reduce) { .live-dot { animation: none; } }
 .ledger tr.row-h:hover td { background: var(--paper-tint); }
 .insight-row { cursor: pointer; }
 .ledger .num {
