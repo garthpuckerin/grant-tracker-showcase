@@ -10,7 +10,10 @@
     "build": "vite build",
     "preview": "vite preview",
     "test:unit": "node --test",
-    "test:e2e": "playwright test"
+    "test:e2e": "playwright test",
+    "test:sweep:mobile": "node scripts/mobile-sweep.mjs",
+    "test:sweep:viewport": "node scripts/viewport-sweep.mjs",
+    "test:sweep:whiteglove": "node scripts/whiteglove-sweep.mjs"
   },
   "dependencies": {
     "react": "^18.2.0",
