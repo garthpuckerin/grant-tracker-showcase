@@ -60,6 +60,9 @@ const FUND = 'var(--fund)';
 const WARN = 'var(--warn)';
 const ALERT = 'var(--alert)';
 const INDIGO = 'var(--indigo)';
+const FUND_TEXT = 'var(--fund-text-accessible)';
+const WARN_TEXT = 'var(--warn-text-accessible)';
+const ALERT_TEXT = 'var(--alert-text-accessible)';
 
 /**
  * Budget utilization: healthy until 80%, watch 80–95%, over/at-risk above 95%.
@@ -70,6 +73,13 @@ export function utilizationColor(frac) {
   if (frac > 0.95) return ALERT;
   if (frac >= 0.8) return WARN;
   return FUND;
+}
+
+/** Accessible text counterpart to utilizationColor; fill hues stay unchanged. */
+export function utilizationTextColor(frac) {
+  if (frac > 0.95) return ALERT_TEXT;
+  if (frac >= 0.8) return WARN_TEXT;
+  return FUND_TEXT;
 }
 
 /**

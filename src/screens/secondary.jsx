@@ -9,6 +9,7 @@ import { InviteMemberForm, NewFilingForm } from '../admin-forms.jsx';
 import { getTheme, setTheme, THEMES } from '../theme.js';
 import { useVizColor, insightColor } from '../viz-color.js';
 import { getDensity, setDensity } from '../density.js';
+import { getReduceMotion, setReduceMotion } from '../reduce-motion.js';
 import { Drawer } from '../drawer.jsx';
 import { useToast, MockButton } from '../toast.jsx';
 import { shiftIso } from '../dates.js';
@@ -1016,7 +1017,6 @@ export const Members = () => {
 // / reduce-motion) are LIVE and persist; the remaining controls are honest
 // fixture-backed previews. No backend, no external deps.
 
-const REDUCE_MOTION_KEY = 'gt2:reducemotion:v1';
 const CADENCE_KEY = 'gt2:cadence:v1';
 
 const SETTINGS_TABS = [
@@ -1072,12 +1072,6 @@ const SettingToggle = ({ label, note, on, setOn }) => (
   </button>
 );
 
-// Read the persisted reduce-motion preference (default off).
-const getReduceMotion = () => {
-  try { return localStorage.getItem(REDUCE_MOTION_KEY) === 'on'; }
-  catch { return false; }
-};
-
 // Read the persisted operating-cadence preferences (sensible defaults).
 const getCadence = () => {
   const defaults = { digest: true, aiReview: true, auditLock: false };
@@ -1102,11 +1096,9 @@ export const Settings = () => {
   const applyDensity = (d) => setDensityState(setDensity(d));
 
   // LIVE — reduce motion (toggles .reduce-motion on <html>; persists)
-  const [reduceMotion, setReduceMotion] = React.useState(getReduceMotion);
+  const [reduceMotion, setReduceMotionState] = React.useState(getReduceMotion);
   const applyReduceMotion = (next) => {
-    document.documentElement.classList.toggle('reduce-motion', next);
-    try { localStorage.setItem(REDUCE_MOTION_KEY, next ? 'on' : 'off'); } catch { /* private mode */ }
-    setReduceMotion(next);
+    setReduceMotionState(setReduceMotion(next));
   };
 
   // LIVE — operating cadence (local state + persist)

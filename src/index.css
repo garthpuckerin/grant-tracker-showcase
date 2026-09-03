@@ -11,19 +11,24 @@
   --ink-2: oklch(0.32 0.015 250);
   --ink-3: oklch(0.50 0.015 250);
   --ink-4: oklch(0.68 0.01 250);
+  --small-text-accessible: oklch(0.45 0.01 250);
   --rule: oklch(0.87 0.01 80);
   --rule-strong: oklch(0.78 0.012 80);
   --accent: oklch(0.52 0.15 35);       /* federal amber/rust */
   --accent-ink: oklch(0.30 0.10 35);
   --accent-wash: oklch(0.95 0.03 50);
   --fund: oklch(0.50 0.10 150);        /* budget healthy */
+  --fund-text-accessible: oklch(0.47 0.10 150);
   --fund-wash: oklch(0.95 0.03 150);
   --alert: oklch(0.55 0.18 28);        /* overspend / urgent */
+  --alert-text-accessible: oklch(0.48 0.18 28);
   --alert-wash: oklch(0.95 0.04 28);
   --warn: oklch(0.72 0.14 75);         /* watch / 80–95% utilization */
+  --warn-text-accessible: oklch(0.48 0.14 75);
   --warn-wash: oklch(0.95 0.05 75);
   --indigo: oklch(0.42 0.10 260);
   --indigo-wash: oklch(0.95 0.025 260);
+  --accent-button-text: white;
 
   /* Shared content cap — topbar + main content center at this width
      (≈half a 34" ultrawide). Below 1180px .main-inner uncaps and fills. */
@@ -52,6 +57,7 @@
   --ink-2: oklch(0.36 0.022 60);
   --ink-3: oklch(0.52 0.020 62);
   --ink-4: oklch(0.66 0.018 64);
+  --small-text-accessible: oklch(0.42 0.018 64);
   --rule: oklch(0.84 0.024 72);
   --rule-strong: oklch(0.74 0.028 70);
   --accent-wash: oklch(0.90 0.045 50);
@@ -70,6 +76,7 @@
   --ink-2: oklch(0.82 0.008 85);
   --ink-3: oklch(0.66 0.010 85);
   --ink-4: oklch(0.52 0.012 85);
+  --small-text-accessible: oklch(0.78 0.012 85);
   --rule: oklch(0.34 0.014 250);
   --rule-strong: oklch(0.46 0.016 250);
   /* Lift accent hues so they read on dark surfaces */
@@ -84,6 +91,10 @@
   --warn-wash: oklch(0.32 0.06 75);
   --indigo: oklch(0.70 0.11 265);
   --indigo-wash: oklch(0.30 0.05 265);
+  --fund-text-accessible: var(--fund);
+  --alert-text-accessible: var(--alert);
+  --warn-text-accessible: var(--warn);
+  --accent-button-text: var(--paper);
 }
 
 * { box-sizing: border-box; }
@@ -186,7 +197,7 @@ button { font-family: inherit; cursor: pointer; }
   font-size: 10px;
   letter-spacing: 0.16em;
   text-transform: uppercase;
-  color: var(--ink-4);
+  color: var(--small-text-accessible);
   padding: 0 0 8px 0;
 }
 .sidebar-item {
@@ -224,7 +235,7 @@ button { font-family: inherit; cursor: pointer; }
   margin-left: auto;
   font-family: var(--font-mono);
   font-size: 11px;
-  color: var(--ink-4);
+  color: var(--small-text-accessible);
 }
 
 .sidebar-user {
@@ -345,7 +356,7 @@ button { font-family: inherit; cursor: pointer; }
 .tb-search .kbd {
   font-family: var(--font-mono);
   font-size: 10px;
-  color: var(--ink-4);
+  color: var(--small-text-accessible);
   border: 1px solid var(--rule);
   padding: 1px 5px;
   border-radius: 2px;
@@ -591,7 +602,7 @@ button { font-family: inherit; cursor: pointer; }
 .btn.accent {
   background: var(--accent);
   border-color: var(--accent);
-  color: white;
+  color: var(--accent-button-text);
 }
 .btn .ic { width: 12px; height: 12px; }
 .btn-link {
@@ -599,6 +610,7 @@ button { font-family: inherit; cursor: pointer; }
   border: 0;
   color: var(--ink);
   font-size: 12px;
+  min-height: 24px;
   padding: 4px 6px;
   text-decoration: underline;
   text-decoration-color: var(--rule-strong);
@@ -910,9 +922,9 @@ button { font-family: inherit; cursor: pointer; }
   margin-bottom: 6px;
 }
 .flag.fund { border-left-color: var(--fund); background: var(--fund-wash); }
-.flag.fund .lbl { color: var(--fund); }
+.flag.fund .lbl { color: var(--fund-text-accessible); }
 .flag.alert { border-left-color: var(--alert); background: var(--alert-wash); }
-.flag.alert .lbl { color: var(--alert); }
+.flag.alert .lbl { color: var(--alert-text-accessible); }
 .flag.indigo { border-left-color: var(--indigo); background: var(--indigo-wash); }
 .flag.indigo .lbl { color: var(--indigo); }
 
@@ -974,7 +986,7 @@ button { font-family: inherit; cursor: pointer; }
   font-size: 10px;
   letter-spacing: 0.12em;
   text-transform: uppercase;
-  color: var(--ink-4);
+  color: var(--small-text-accessible);
 }
 
 /* Sparkline */
@@ -1902,7 +1914,7 @@ select.field-input { cursor: pointer; }
   letter-spacing: 0.12em;
 }
 .landing-top-actions { display: flex; align-items: center; gap: 14px; }
-.landing-mock-note { color: var(--ink-4); }
+.landing-mock-note { color: var(--small-text-accessible); }
 
 .landing-main {
   flex: 1;
@@ -1946,7 +1958,7 @@ select.field-input { cursor: pointer; }
   font-size: 11px;
   letter-spacing: 0.1em;
   text-transform: uppercase;
-  color: var(--ink-4);
+  color: var(--small-text-accessible);
 }
 
 /* Feature highlights — 2x2 ledger of hairline-bordered, accent-edged cards */
@@ -1996,7 +2008,7 @@ select.field-input { cursor: pointer; }
   font-size: 10px;
   letter-spacing: 0.12em;
   text-transform: uppercase;
-  color: var(--ink-4);
+  color: var(--small-text-accessible);
 }
 
 /* Landing responsive — stack hero above features, then single-column cards */
@@ -2267,7 +2279,7 @@ select.field-input { cursor: pointer; }
 .chart-hits { position: absolute; inset: 0 0 18px 0; display: flex; gap: 6px; }
 .chart-hits button { flex: 1; min-width: 0; background: transparent; border: 0; cursor: pointer; border-radius: 2px; padding: 0; }
 .chart-hits button:hover, .chart-hits button:focus-visible { background: color-mix(in oklch, var(--ink) 7%, transparent); }
-.chart-note { font-size: 10px; letter-spacing: 0.08em; text-transform: uppercase; color: var(--ink-4); margin-top: 10px; }
+.chart-note { font-size: 10px; letter-spacing: 0.08em; text-transform: uppercase; color: var(--small-text-accessible); margin-top: 10px; }
 
 /* Clickable stat tiles + filter states (dashboard KPIs, insight agent tiles,
    compliance framework rows). */

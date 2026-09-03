@@ -2,7 +2,7 @@
 import React from 'react';
 import { DATA, buildCompliance } from '../data.js';
 import { fmt, Icon, Donut, Utilization, BarGroup, LineArea } from '../atoms.jsx';
-import { insightColor, utilizationColor } from '../viz-color.js';
+import { insightColor, utilizationTextColor } from '../viz-color.js';
 import { ACTION_LABEL, insightRoute } from '../insight-actions.js';
 import { visibleGrants, scopeByGrant, scopeInsights, scopeMonthly } from '../scope.js';
 import { MockButton } from '../toast.jsx';
@@ -228,12 +228,8 @@ export const Dashboard = ({ navigate }) => {
                   <div
                     className="row row-h"
                     key={i.id}
-                    role="button"
-                    tabIndex={0}
-                    aria-label={`${ACTION_LABEL[i.agent] || 'Open'} — ${i.title}`}
                     style={{ padding: '14px 18px', alignItems: 'flex-start', cursor: 'pointer' }}
                     onClick={open}
-                    onKeyDown={(e) => { if (e.key === 'Enter') open(); }}
                   >
                     <div style={{ width: 4, alignSelf: 'stretch', background: insightColor(i), flexShrink: 0 }}></div>
                     <div style={{ flex: 1 }}>
@@ -293,7 +289,7 @@ export const Dashboard = ({ navigate }) => {
                   <td style={{ width: 200 }}>
                     <div style={{ display: 'flex', alignItems: 'center', gap: 10 }}>
                       <Utilization spent={g.spent} encumbered={g.spent * 0.04} total={g.budget} />
-                      <span className="mono" style={{ fontSize: 11, color: g.pct >= 0.8 ? utilizationColor(g.pct) : 'var(--ink-2)', minWidth: 36 }}>{fmt.pct(g.pct, 0)}</span>
+                      <span className="mono" style={{ fontSize: 11, color: g.pct >= 0.8 ? utilizationTextColor(g.pct) : 'var(--ink-2)', minWidth: 36 }}>{fmt.pct(g.pct, 0)}</span>
                     </div>
                   </td>
                   <td className="num r">{fmt.money(g.spent, { compact: true })}</td>
