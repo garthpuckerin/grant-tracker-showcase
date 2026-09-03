@@ -49,13 +49,23 @@ export async function runReleaseSweeps({
     preview: { host: HOST, port: PORT, strictPort: true },
   });
 
+  let sweepError;
   try {
     for (const script of SWEEP_SCRIPTS) {
       await runSweep(script, spawn);
     }
-  } finally {
-    await server.close();
+  } catch (error) {
+    sweepError = error;
   }
+
+  try {
+    await server.close();
+  } catch (cleanupError) {
+    if (sweepError === undefined) throw cleanupError;
+    sweepError.cleanupError = cleanupError;
+  }
+
+  if (sweepError !== undefined) throw sweepError;
 }
 
 const isCli =

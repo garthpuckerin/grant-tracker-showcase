@@ -18,7 +18,7 @@ function successfulChild() {
   return child;
 }
 
-function previewHarness() {
+function previewHarness({ closeError } = {}) {
   const calls = [];
   let closeCount = 0;
   return {
@@ -31,6 +31,7 @@ function previewHarness() {
       return {
         close: async () => {
           closeCount += 1;
+          if (closeError) throw closeError;
         },
       };
     },
@@ -138,5 +139,77 @@ test('closes the preview server after a child sweep fails', async () => {
     }),
   );
 
+  assert.equal(preview.closeCount, 1);
+});
+
+test('preserves a nonzero child exit when preview cleanup also fails', async () => {
+  const cleanupError = new Error('preview close failed');
+  const preview = previewHarness({ closeError: cleanupError });
+
+  await assert.rejects(
+    runReleaseSweeps({
+      preview: preview.preview,
+      spawn: () => {
+        const child = new EventEmitter();
+        queueMicrotask(() => child.emit('exit', 19, null));
+        return child;
+      },
+    }),
+    (error) => error.exitCode === 19 && error.cleanupError === cleanupError,
+  );
+
+  assert.equal(preview.closeCount, 1);
+});
+
+test('preserves a child signal when preview cleanup also fails', async () => {
+  const cleanupError = new Error('preview close failed');
+  const preview = previewHarness({ closeError: cleanupError });
+
+  await assert.rejects(
+    runReleaseSweeps({
+      preview: preview.preview,
+      spawn: () => {
+        const child = new EventEmitter();
+        queueMicrotask(() => child.emit('exit', null, 'SIGTERM'));
+        return child;
+      },
+    }),
+    (error) => error.signal === 'SIGTERM' && error.cleanupError === cleanupError,
+  );
+
+  assert.equal(preview.closeCount, 1);
+});
+
+test('surfaces a preview cleanup failure after successful sweeps', async () => {
+  const cleanupError = new Error('preview close failed');
+  const preview = previewHarness({ closeError: cleanupError });
+
+  await assert.rejects(
+    runReleaseSweeps({ preview: preview.preview, spawn: successfulChild }),
+    (error) => error === cleanupError,
+  );
+
+  assert.equal(preview.closeCount, 1);
+});
+
+test('propagates a child process error unchanged and stops later sweeps', async () => {
+  const preview = previewHarness();
+  const spawnError = Object.assign(new Error('spawn failed'), { code: 'ENOENT' });
+  const launched = [];
+
+  await assert.rejects(
+    runReleaseSweeps({
+      preview: preview.preview,
+      spawn: (_command, [script]) => {
+        launched.push(script);
+        const child = new EventEmitter();
+        queueMicrotask(() => child.emit('error', spawnError));
+        return child;
+      },
+    }),
+    (error) => error === spawnError && error.code === 'ENOENT',
+  );
+
+  assert.deepEqual(launched, [EXPECTED_SWEEPS[0]]);
   assert.equal(preview.closeCount, 1);
 });
