@@ -45,7 +45,7 @@ function textContent(element) {
     .join('');
 }
 
-function parsedHead(html) {
+function parsedDocument(html) {
   const document = parse(html, { scriptingEnabled: true });
   const htmlElements = findElements(document, 'html');
   assert.equal(
@@ -59,13 +59,21 @@ function parsedHead(html) {
     1,
     'parsed document must contain exactly one active <head>',
   );
-  return heads[0];
+  return { document, head: heads[0] };
+}
+
+function belongsTo(node, ancestor) {
+  for (let parent = node.parentNode; parent; parent = parent.parentNode) {
+    if (parent === ancestor) return true;
+  }
+  return false;
 }
 
 function requireUniqueHeadMeta(html, selector) {
-  const matches = findElements(parsedHead(html), 'meta')
-    .map((element) => elementAttributes(element))
-    .filter((attributes) =>
+  const { document, head } = parsedDocument(html);
+  const matches = findElements(document, 'meta')
+    .map((element) => ({ attributes: elementAttributes(element), element }))
+    .filter(({ attributes }) =>
       Object.entries(selector).every(
         ([name, value]) => attributes.get(name.toLowerCase()) === value,
       ),
@@ -79,13 +87,22 @@ function requireUniqueHeadMeta(html, selector) {
     1,
     `expected exactly one active <meta ${selectorLabel}>`,
   );
-  return matches[0];
+  assert.ok(
+    belongsTo(matches[0].element, head),
+    `<meta ${selectorLabel}> must be inside the active <head>`,
+  );
+  return matches[0].attributes;
 }
 
 function requireUniqueHeadTitle(html) {
-  const titles = findElements(parsedHead(html), 'title');
+  const { document, head } = parsedDocument(html);
+  const titles = findElements(document, 'title');
 
   assert.equal(titles.length, 1, 'document must contain exactly one active <title>');
+  assert.ok(
+    belongsTo(titles[0], head),
+    'active <title> must be inside the active <head>',
+  );
   return textContent(titles[0]).trim();
 }
 
@@ -195,7 +212,7 @@ test('metadata parsing rejects duplicates and out-of-head metadata', () => {
   );
   assert.throws(
     () => requireUniqueHeadMeta(outsideHead, { property: 'og:title' }),
-    /exactly one active/,
+    /must be inside the active <head>/,
   );
 });
 
@@ -258,11 +275,11 @@ test('metadata parsing follows browser head closure when body starts', () => {
 
   assert.throws(
     () => requireUniqueHeadMeta(metadataAfterBody, { property: 'og:title' }),
-    /exactly one active/,
+    /must be inside the active <head>/,
   );
   assert.throws(
     () => requireUniqueHeadTitle(metadataAfterBody),
-    /exactly one active/,
+    /must be inside the active <head>/,
   );
 });
 
@@ -281,6 +298,29 @@ test('metadata parsing does not accept a fake head inside textarea content', () 
   );
   assert.throws(
     () => requireUniqueHeadTitle(fakeHead),
+    /exactly one active/,
+  );
+});
+
+test('metadata parsing rejects matching duplicates outside the active head', () => {
+  const duplicateOutsideHead = `
+    <html>
+      <head>
+        <meta property="og:title" content="Grant Tracker">
+        <title>Grant Tracker</title>
+      </head>
+      <body>
+        <meta property="og:title" content="Grant Tracker">
+        <title>Grant Tracker</title>
+      </body>
+    </html>`;
+
+  assert.throws(
+    () => requireUniqueHeadMeta(duplicateOutsideHead, { property: 'og:title' }),
+    /exactly one active/,
+  );
+  assert.throws(
+    () => requireUniqueHeadTitle(duplicateOutsideHead),
     /exactly one active/,
   );
 });
