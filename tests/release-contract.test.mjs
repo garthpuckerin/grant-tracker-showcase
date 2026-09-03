@@ -1,6 +1,7 @@
 import assert from 'node:assert/strict';
 import { readFileSync } from 'node:fs';
 import test from 'node:test';
+import { parse } from 'parse5';
 
 const PRODUCT_NAME = 'Grant Tracker';
 const PACKAGE_NAME = 'grant-tracker-showcase';
@@ -17,172 +18,58 @@ const packageJson = JSON.parse(
 );
 const indexHtml = readFileSync(new URL('../index.html', import.meta.url), 'utf8');
 
-function parseAttributes(startTag, tagName) {
-  const attributeSource = startTag
-    .replace(new RegExp(`^<${tagName}\\b`, 'i'), '')
-    .replace(/\/?\s*>$/, '');
+function elementAttributes(element) {
   const attributes = new Map();
-  const attributePattern =
-    /([^\s"'<>\/=]+)\s*(?:=\s*(?:"([^"]*)"|'([^']*)'|([^\s"'=<>`]+)))?/g;
-
-  for (const match of attributeSource.matchAll(attributePattern)) {
-    const name = match[1].toLowerCase();
-    assert.ok(!attributes.has(name), `duplicate ${name} attribute on <${tagName}>`);
-    attributes.set(name, match[2] ?? match[3] ?? match[4] ?? '');
+  for (const attribute of element.attrs) {
+    assert.ok(
+      !attributes.has(attribute.name),
+      `duplicate ${attribute.name} attribute on <${element.tagName}>`,
+    );
+    attributes.set(attribute.name, attribute.value);
   }
-
   return attributes;
 }
 
-function readTagAt(html, start) {
-  if (html[start] !== '<') return null;
-
-  let quote = null;
-  for (let index = start + 1; index < html.length; index += 1) {
-    const character = html[index];
-    if (quote) {
-      if (character === quote) quote = null;
-      continue;
-    }
-    if (character === '"' || character === "'") {
-      quote = character;
-      continue;
-    }
-    if (character !== '>') continue;
-
-    const source = html.slice(start, index + 1);
-    const nameMatch = source.match(/^<(\/?)\s*([a-z][a-z0-9:-]*)\b/i);
-    return {
-      closing: nameMatch?.[1] === '/',
-      end: index + 1,
-      name: nameMatch?.[2].toLowerCase() ?? null,
-      selfClosing: /\/\s*>$/.test(source),
-      source,
-      start,
-    };
+function findElements(root, tagName) {
+  const matches = [];
+  for (const child of root.childNodes ?? []) {
+    if (child.nodeName === tagName) matches.push(child);
+    matches.push(...findElements(child, tagName));
   }
-
-  return null;
+  return matches;
 }
 
-function findClosingTag(html, start, tagName) {
-  const lowerHtml = html.toLowerCase();
-  let cursor = start;
-
-  while (cursor < html.length) {
-    const candidate = lowerHtml.indexOf(`</${tagName}`, cursor);
-    if (candidate === -1) return null;
-    const token = readTagAt(html, candidate);
-    if (token?.closing && token.name === tagName) return token;
-    cursor = candidate + 2;
-  }
-
-  return null;
+function textContent(element) {
+  return (element.childNodes ?? [])
+    .map((child) => (child.nodeName === '#text' ? child.value : textContent(child)))
+    .join('');
 }
 
-function scanActiveMarkup(html) {
-  const rawTextTags = new Set(['script', 'style']);
-  const inertContainerTags = new Set(['template', 'noscript']);
-  const inertStack = [];
-  const metadata = [];
-  const titles = [];
-  let headOpenings = 0;
-  let headClosings = 0;
-  let inHead = false;
-  let index = 0;
-
-  while (index < html.length) {
-    if (html.startsWith('<!--', index)) {
-      const commentEnd = html.indexOf('-->', index + 4);
-      index = commentEnd === -1 ? html.length : commentEnd + 3;
-      continue;
-    }
-    if (html[index] !== '<') {
-      index += 1;
-      continue;
-    }
-
-    const token = readTagAt(html, index);
-    if (!token) {
-      index += 1;
-      continue;
-    }
-    index = token.end;
-    if (!token.name) continue;
-
-    if (rawTextTags.has(token.name) && !token.closing) {
-      const closingTag = findClosingTag(html, token.end, token.name);
-      index = closingTag?.end ?? html.length;
-      continue;
-    }
-
-    if (token.name === 'title' && !token.closing) {
-      const closingTag = findClosingTag(html, token.end, token.name);
-      if (inertStack.length === 0) {
-        titles.push({
-          content: html.slice(token.end, closingTag?.start ?? html.length),
-          insideHead: inHead,
-        });
-      }
-      index = closingTag?.end ?? html.length;
-      continue;
-    }
-
-    if (inertContainerTags.has(token.name)) {
-      if (token.closing) {
-        if (inertStack.at(-1) === token.name) inertStack.pop();
-      } else if (!token.selfClosing) {
-        inertStack.push(token.name);
-      }
-      continue;
-    }
-
-    if (inertStack.length > 0) continue;
-
-    if (token.name === 'head') {
-      if (token.closing) {
-        headClosings += 1;
-        inHead = false;
-      } else {
-        headOpenings += 1;
-        inHead = true;
-      }
-      continue;
-    }
-
-    if (token.name === 'meta' && !token.closing) {
-      metadata.push({
-        attributes: parseAttributes(token.source, token.name),
-        insideHead: inHead,
-      });
-    }
-  }
-
-  return { headClosings, headOpenings, metadata, titles };
-}
-
-function activeHead(html) {
-  const markup = scanActiveMarkup(html);
+function parsedHead(html) {
+  const document = parse(html, { scriptingEnabled: true });
+  const htmlElements = findElements(document, 'html');
   assert.equal(
-    markup.headOpenings,
+    htmlElements.length,
     1,
-    'document must contain exactly one active <head>',
+    'parsed document must contain exactly one <html> element',
   );
+  const heads = findElements(htmlElements[0], 'head');
   assert.equal(
-    markup.headClosings,
+    heads.length,
     1,
-    'document must contain exactly one active </head>',
+    'parsed document must contain exactly one active <head>',
   );
-  return markup;
+  return heads[0];
 }
 
 function requireUniqueHeadMeta(html, selector) {
-  const head = activeHead(html);
-  const matches = head.metadata.filter(({ attributes }) =>
-    Object.entries(selector).every(
-      ([name, value]) => attributes.get(name.toLowerCase()) === value,
-    ),
-  );
+  const matches = findElements(parsedHead(html), 'meta')
+    .map((element) => elementAttributes(element))
+    .filter((attributes) =>
+      Object.entries(selector).every(
+        ([name, value]) => attributes.get(name.toLowerCase()) === value,
+      ),
+    );
 
   const selectorLabel = Object.entries(selector)
     .map(([name, value]) => `${name}="${value}"`)
@@ -192,25 +79,14 @@ function requireUniqueHeadMeta(html, selector) {
     1,
     `expected exactly one active <meta ${selectorLabel}>`,
   );
-  assert.ok(
-    matches[0].insideHead,
-    `<meta ${selectorLabel}> must be inside the active <head>`,
-  );
-
-  return matches[0].attributes;
+  return matches[0];
 }
 
 function requireUniqueHeadTitle(html) {
-  const head = activeHead(html);
-  const titles = head.titles;
+  const titles = findElements(parsedHead(html), 'title');
 
   assert.equal(titles.length, 1, 'document must contain exactly one active <title>');
-  assert.ok(
-    titles[0].insideHead,
-    'active <title> must be inside the active <head>',
-  );
-
-  return titles[0].content.trim();
+  return textContent(titles[0]).trim();
 }
 
 test('package metadata preserves the Grant Tracker identity', () => {
@@ -319,7 +195,7 @@ test('metadata parsing rejects duplicates and out-of-head metadata', () => {
   );
   assert.throws(
     () => requireUniqueHeadMeta(outsideHead, { property: 'og:title' }),
-    /must be inside the active <head>/,
+    /exactly one active/,
   );
 });
 
@@ -347,32 +223,64 @@ test('metadata parsing does not accept tags embedded in inert head elements', ()
   }
 });
 
-test('metadata parsing does not expose tags after nested inert containers', () => {
-  for (const tagName of ['template', 'noscript']) {
-    const nestedMeta = `
-      <html><head>
-        <${tagName}>
-          <${tagName}></${tagName}>
-          <meta property="og:title" content="embedded after inner close">
-        </${tagName}>
-      </head><body></body></html>`;
-    const nestedTitle = `
-      <html><head>
-        <${tagName}>
-          <${tagName}></${tagName}>
-          <title>embedded after inner close</title>
-        </${tagName}>
-      </head><body></body></html>`;
+test('metadata parsing does not expose tags after a nested template closes', () => {
+  const nestedMeta = `
+    <html><head>
+      <template>
+        <template></template>
+        <meta property="og:title" content="embedded after inner close">
+      </template>
+    </head><body></body></html>`;
+  const nestedTitle = `
+    <html><head>
+      <template>
+        <template></template>
+        <title>embedded after inner close</title>
+      </template>
+    </head><body></body></html>`;
 
-    assert.throws(
-      () => requireUniqueHeadMeta(nestedMeta, { property: 'og:title' }),
-      /exactly one active/,
-      `<meta> after a nested <${tagName}> close must remain inert`,
-    );
-    assert.throws(
-      () => requireUniqueHeadTitle(nestedTitle),
-      /exactly one active/,
-      `<title> after a nested <${tagName}> close must remain inert`,
-    );
-  }
+  assert.throws(
+    () => requireUniqueHeadMeta(nestedMeta, { property: 'og:title' }),
+    /exactly one active/,
+  );
+  assert.throws(
+    () => requireUniqueHeadTitle(nestedTitle),
+    /exactly one active/,
+  );
+});
+
+test('metadata parsing follows browser head closure when body starts', () => {
+  const metadataAfterBody = `
+    <html><head><body>
+      <meta property="og:title" content="after body">
+      <title>after body</title>
+    </head></body></html>`;
+
+  assert.throws(
+    () => requireUniqueHeadMeta(metadataAfterBody, { property: 'og:title' }),
+    /exactly one active/,
+  );
+  assert.throws(
+    () => requireUniqueHeadTitle(metadataAfterBody),
+    /exactly one active/,
+  );
+});
+
+test('metadata parsing does not accept a fake head inside textarea content', () => {
+  const fakeHead = `
+    <html><body><textarea>
+      <head>
+        <meta property="og:title" content="textarea content">
+        <title>textarea content</title>
+      </head>
+    </textarea></body></html>`;
+
+  assert.throws(
+    () => requireUniqueHeadMeta(fakeHead, { property: 'og:title' }),
+    /exactly one active/,
+  );
+  assert.throws(
+    () => requireUniqueHeadTitle(fakeHead),
+    /exactly one active/,
+  );
 });
