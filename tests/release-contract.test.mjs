@@ -21,8 +21,15 @@ function withoutComments(html) {
   return html.replace(/<!--[\s\S]*?-->/g, (comment) => ' '.repeat(comment.length));
 }
 
+function withoutInactiveContent(html) {
+  return withoutComments(html).replace(
+    /<(script|style|template|noscript)\b[^>]*>[\s\S]*?<\/\1\s*>/gi,
+    (element) => ' '.repeat(element.length),
+  );
+}
+
 function activeHead(html) {
-  const document = withoutComments(html);
+  const document = withoutInactiveContent(html);
   const openings = [...document.matchAll(/<head\b[^>]*>/gi)];
   const closings = [...document.matchAll(/<\/head\s*>/gi)];
 
@@ -209,4 +216,28 @@ test('metadata parsing rejects duplicates and out-of-head metadata', () => {
     () => requireUniqueHeadMeta(outsideHead, { property: 'og:title' }),
     /must be inside the active <head>/,
   );
+});
+
+test('metadata parsing does not accept tags embedded in inert head elements', () => {
+  for (const tagName of ['script', 'style', 'template', 'noscript']) {
+    const metaOnly = `
+      <html><head>
+        <${tagName}><meta property="og:title" content="embedded"></${tagName}>
+      </head><body></body></html>`;
+    const titleOnly = `
+      <html><head>
+        <${tagName}><title>embedded</title></${tagName}>
+      </head><body></body></html>`;
+
+    assert.throws(
+      () => requireUniqueHeadMeta(metaOnly, { property: 'og:title' }),
+      /exactly one active/,
+      `<meta> text inside <${tagName}> must not satisfy the contract`,
+    );
+    assert.throws(
+      () => requireUniqueHeadTitle(titleOnly),
+      /exactly one active/,
+      `<title> text inside <${tagName}> must not satisfy the contract`,
+    );
+  }
 });
