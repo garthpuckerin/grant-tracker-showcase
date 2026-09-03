@@ -142,7 +142,7 @@ export const Donut = ({ pct, size = 140, label, valueText, centerLabel, color })
         <div style={{ position: 'absolute', inset: 0, display: 'grid', placeItems: 'center', textAlign: 'center' }}>
           <div style={{ maxWidth: inner, overflow: 'hidden' }}>
             <div className="serif" style={{ fontSize: numSize, lineHeight: 1 }}>{(pct * 100).toFixed(0)}<span style={{ fontSize: Math.round(numSize * 0.55), color: 'var(--ink-3)' }}>%</span></div>
-            {centerLabel && <div className="mono" style={{ fontSize: 9, color: 'var(--ink-3)', letterSpacing: '0.14em', textTransform: 'uppercase', marginTop: 5, whiteSpace: 'nowrap' }}>{centerLabel}</div>}
+            {centerLabel && <div className="mono" style={{ fontSize: 9, color: 'var(--small-text-accessible)', letterSpacing: '0.14em', textTransform: 'uppercase', marginTop: 5, whiteSpace: 'nowrap' }}>{centerLabel}</div>}
           </div>
         </div>
       </div>
