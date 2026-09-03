@@ -12,6 +12,7 @@ const STANDARD_DESCRIPTION =
 const OPEN_GRAPH_TITLE = 'Grant Tracker — from typewriter to database';
 const OPEN_GRAPH_DESCRIPTION =
   'A federal grant-management cockpit: awards, budgets, RBAC-gated reallocation approvals, compliance, and cross-footing SF-425 reports. Portfolio demo on mock data.';
+const HTML_NAMESPACE = 'http://www.w3.org/1999/xhtml';
 
 const packageJson = JSON.parse(
   readFileSync(new URL('../package.json', import.meta.url), 'utf8'),
@@ -96,7 +97,9 @@ function requireUniqueHeadMeta(html, selector) {
 
 function requireUniqueHeadTitle(html) {
   const { document, head } = parsedDocument(html);
-  const titles = findElements(document, 'title');
+  const titles = findElements(document, 'title').filter(
+    (element) => element.namespaceURI === HTML_NAMESPACE,
+  );
 
   assert.equal(titles.length, 1, 'document must contain exactly one active <title>');
   assert.ok(
@@ -323,4 +326,18 @@ test('metadata parsing rejects matching duplicates outside the active head', () 
     () => requireUniqueHeadTitle(duplicateOutsideHead),
     /exactly one active/,
   );
+});
+
+test('title uniqueness ignores SVG accessibility titles', () => {
+  const htmlWithSvgTitle = `
+    <html>
+      <head><title>Grant Tracker</title></head>
+      <body>
+        <svg role="img" aria-labelledby="chart-title">
+          <title id="chart-title">Awards by status</title>
+        </svg>
+      </body>
+    </html>`;
+
+  assert.equal(requireUniqueHeadTitle(htmlWithSvgTitle), 'Grant Tracker');
 });
