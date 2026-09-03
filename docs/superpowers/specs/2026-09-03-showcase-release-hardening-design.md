@@ -23,7 +23,7 @@ Turn Grant Tracker's existing successful checks into an enforced release contrac
 
 ## Design
 
-Existing product behavior remains the source of truth. Release hardening is additive: package scripts bind the already-present sweep programs into one deterministic `test:release` command, while browser assertions protect the name, metadata, and accessibility of the public landing and application shell.
+Existing product behavior remains the source of truth. Release hardening is additive: package scripts bind the already-present sweep programs into one deterministic `test:release` command, while static metadata assertions and browser accessibility assertions protect the public landing and application shell.
 
 The sweep scripts will continue using their current implementations and exit semantics, but the release gate must never default to the deployed Vercel site. A release runner will start the candidate build locally, wait for it to become ready, pass its explicit local `BASE_URL` to all three sweeps, and always stop the server on success or failure. GitHub Actions will install from the lockfile, install Chromium, and run the same release command used locally so CI and developer verification cannot diverge.
 
