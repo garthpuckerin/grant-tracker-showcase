@@ -17,32 +17,6 @@ const packageJson = JSON.parse(
 );
 const indexHtml = readFileSync(new URL('../index.html', import.meta.url), 'utf8');
 
-function withoutComments(html) {
-  return html.replace(/<!--[\s\S]*?-->/g, (comment) => ' '.repeat(comment.length));
-}
-
-function withoutInactiveContent(html) {
-  return withoutComments(html).replace(
-    /<(script|style|template|noscript)\b[^>]*>[\s\S]*?<\/\1\s*>/gi,
-    (element) => ' '.repeat(element.length),
-  );
-}
-
-function activeHead(html) {
-  const document = withoutInactiveContent(html);
-  const openings = [...document.matchAll(/<head\b[^>]*>/gi)];
-  const closings = [...document.matchAll(/<\/head\s*>/gi)];
-
-  assert.equal(openings.length, 1, 'document must contain exactly one active <head>');
-  assert.equal(closings.length, 1, 'document must contain exactly one active </head>');
-
-  const start = openings[0].index + openings[0][0].length;
-  const end = closings[0].index;
-  assert.ok(start <= end, 'active <head> must close after it opens');
-
-  return { document, start, end };
-}
-
 function parseAttributes(startTag, tagName) {
   const attributeSource = startTag
     .replace(new RegExp(`^<${tagName}\\b`, 'i'), '')
@@ -60,18 +34,151 @@ function parseAttributes(startTag, tagName) {
   return attributes;
 }
 
-function findStartTags(document, tagName) {
-  const pattern = new RegExp(`<${tagName}\\b[^>]*>`, 'gi');
-  return [...document.matchAll(pattern)].map((match) => ({
-    attributes: parseAttributes(match[0], tagName),
-    end: match.index + match[0].length,
-    start: match.index,
-  }));
+function readTagAt(html, start) {
+  if (html[start] !== '<') return null;
+
+  let quote = null;
+  for (let index = start + 1; index < html.length; index += 1) {
+    const character = html[index];
+    if (quote) {
+      if (character === quote) quote = null;
+      continue;
+    }
+    if (character === '"' || character === "'") {
+      quote = character;
+      continue;
+    }
+    if (character !== '>') continue;
+
+    const source = html.slice(start, index + 1);
+    const nameMatch = source.match(/^<(\/?)\s*([a-z][a-z0-9:-]*)\b/i);
+    return {
+      closing: nameMatch?.[1] === '/',
+      end: index + 1,
+      name: nameMatch?.[2].toLowerCase() ?? null,
+      selfClosing: /\/\s*>$/.test(source),
+      source,
+      start,
+    };
+  }
+
+  return null;
+}
+
+function findClosingTag(html, start, tagName) {
+  const lowerHtml = html.toLowerCase();
+  let cursor = start;
+
+  while (cursor < html.length) {
+    const candidate = lowerHtml.indexOf(`</${tagName}`, cursor);
+    if (candidate === -1) return null;
+    const token = readTagAt(html, candidate);
+    if (token?.closing && token.name === tagName) return token;
+    cursor = candidate + 2;
+  }
+
+  return null;
+}
+
+function scanActiveMarkup(html) {
+  const rawTextTags = new Set(['script', 'style']);
+  const inertContainerTags = new Set(['template', 'noscript']);
+  const inertStack = [];
+  const metadata = [];
+  const titles = [];
+  let headOpenings = 0;
+  let headClosings = 0;
+  let inHead = false;
+  let index = 0;
+
+  while (index < html.length) {
+    if (html.startsWith('<!--', index)) {
+      const commentEnd = html.indexOf('-->', index + 4);
+      index = commentEnd === -1 ? html.length : commentEnd + 3;
+      continue;
+    }
+    if (html[index] !== '<') {
+      index += 1;
+      continue;
+    }
+
+    const token = readTagAt(html, index);
+    if (!token) {
+      index += 1;
+      continue;
+    }
+    index = token.end;
+    if (!token.name) continue;
+
+    if (rawTextTags.has(token.name) && !token.closing) {
+      const closingTag = findClosingTag(html, token.end, token.name);
+      index = closingTag?.end ?? html.length;
+      continue;
+    }
+
+    if (token.name === 'title' && !token.closing) {
+      const closingTag = findClosingTag(html, token.end, token.name);
+      if (inertStack.length === 0) {
+        titles.push({
+          content: html.slice(token.end, closingTag?.start ?? html.length),
+          insideHead: inHead,
+        });
+      }
+      index = closingTag?.end ?? html.length;
+      continue;
+    }
+
+    if (inertContainerTags.has(token.name)) {
+      if (token.closing) {
+        if (inertStack.at(-1) === token.name) inertStack.pop();
+      } else if (!token.selfClosing) {
+        inertStack.push(token.name);
+      }
+      continue;
+    }
+
+    if (inertStack.length > 0) continue;
+
+    if (token.name === 'head') {
+      if (token.closing) {
+        headClosings += 1;
+        inHead = false;
+      } else {
+        headOpenings += 1;
+        inHead = true;
+      }
+      continue;
+    }
+
+    if (token.name === 'meta' && !token.closing) {
+      metadata.push({
+        attributes: parseAttributes(token.source, token.name),
+        insideHead: inHead,
+      });
+    }
+  }
+
+  return { headClosings, headOpenings, metadata, titles };
+}
+
+function activeHead(html) {
+  const markup = scanActiveMarkup(html);
+  assert.equal(
+    markup.headOpenings,
+    1,
+    'document must contain exactly one active <head>',
+  );
+  assert.equal(
+    markup.headClosings,
+    1,
+    'document must contain exactly one active </head>',
+  );
+  return markup;
 }
 
 function requireUniqueHeadMeta(html, selector) {
   const head = activeHead(html);
-  const matches = findStartTags(head.document, 'meta').filter(({ attributes }) =>
+  const matches = head.metadata.filter(({ attributes }) =>
     Object.entries(selector).every(
       ([name, value]) => attributes.get(name.toLowerCase()) === value,
     ),
@@ -86,7 +193,7 @@ function requireUniqueHeadMeta(html, selector) {
     `expected exactly one active <meta ${selectorLabel}>`,
   );
   assert.ok(
-    matches[0].start >= head.start && matches[0].end <= head.end,
+    matches[0].insideHead,
     `<meta ${selectorLabel}> must be inside the active <head>`,
   );
 
@@ -95,17 +202,15 @@ function requireUniqueHeadMeta(html, selector) {
 
 function requireUniqueHeadTitle(html) {
   const head = activeHead(html);
-  const titles = [...head.document.matchAll(/<title\b[^>]*>([\s\S]*?)<\/title\s*>/gi)];
+  const titles = head.titles;
 
   assert.equal(titles.length, 1, 'document must contain exactly one active <title>');
-  const start = titles[0].index;
-  const end = start + titles[0][0].length;
   assert.ok(
-    start >= head.start && end <= head.end,
+    titles[0].insideHead,
     'active <title> must be inside the active <head>',
   );
 
-  return titles[0][1].trim();
+  return titles[0].content.trim();
 }
 
 test('package metadata preserves the Grant Tracker identity', () => {
@@ -238,6 +343,36 @@ test('metadata parsing does not accept tags embedded in inert head elements', ()
       () => requireUniqueHeadTitle(titleOnly),
       /exactly one active/,
       `<title> text inside <${tagName}> must not satisfy the contract`,
+    );
+  }
+});
+
+test('metadata parsing does not expose tags after nested inert containers', () => {
+  for (const tagName of ['template', 'noscript']) {
+    const nestedMeta = `
+      <html><head>
+        <${tagName}>
+          <${tagName}></${tagName}>
+          <meta property="og:title" content="embedded after inner close">
+        </${tagName}>
+      </head><body></body></html>`;
+    const nestedTitle = `
+      <html><head>
+        <${tagName}>
+          <${tagName}></${tagName}>
+          <title>embedded after inner close</title>
+        </${tagName}>
+      </head><body></body></html>`;
+
+    assert.throws(
+      () => requireUniqueHeadMeta(nestedMeta, { property: 'og:title' }),
+      /exactly one active/,
+      `<meta> after a nested <${tagName}> close must remain inert`,
+    );
+    assert.throws(
+      () => requireUniqueHeadTitle(nestedTitle),
+      /exactly one active/,
+      `<title> after a nested <${tagName}> close must remain inert`,
     );
   }
 });
