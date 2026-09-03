@@ -115,17 +115,22 @@ test('package metadata preserves the Grant Tracker identity', () => {
   assert.match(packageJson.description, new RegExp(`^${PRODUCT_NAME}\\b`));
 });
 
-test('package scripts expose each existing release sweep', () => {
+test('package scripts expose each release sweep and aggregate release commands', () => {
   assert.deepEqual(
     {
       'test:sweep:mobile': packageJson.scripts['test:sweep:mobile'],
       'test:sweep:viewport': packageJson.scripts['test:sweep:viewport'],
       'test:sweep:whiteglove': packageJson.scripts['test:sweep:whiteglove'],
+      'test:sweeps': packageJson.scripts['test:sweeps'],
+      'test:release': packageJson.scripts['test:release'],
     },
     {
       'test:sweep:mobile': 'node scripts/mobile-sweep.mjs',
       'test:sweep:viewport': 'node scripts/viewport-sweep.mjs',
       'test:sweep:whiteglove': 'node scripts/whiteglove-sweep.mjs',
+      'test:sweeps': 'node scripts/run-release-sweeps.mjs',
+      'test:release':
+        'npm run build && npm run test:unit && npm run test:e2e && npm run test:sweeps',
     },
   );
 });

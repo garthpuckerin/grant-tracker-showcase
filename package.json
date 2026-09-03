@@ -13,7 +13,9 @@
     "test:e2e": "playwright test",
     "test:sweep:mobile": "node scripts/mobile-sweep.mjs",
     "test:sweep:viewport": "node scripts/viewport-sweep.mjs",
-    "test:sweep:whiteglove": "node scripts/whiteglove-sweep.mjs"
+    "test:sweep:whiteglove": "node scripts/whiteglove-sweep.mjs",
+    "test:sweeps": "node scripts/run-release-sweeps.mjs",
+    "test:release": "npm run build && npm run test:unit && npm run test:e2e && npm run test:sweeps"
   },
   "dependencies": {
     "react": "^18.2.0",
