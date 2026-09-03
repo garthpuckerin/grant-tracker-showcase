@@ -5,6 +5,7 @@ import { parse } from 'parse5';
 
 const PRODUCT_NAME = 'Grant Tracker';
 const PACKAGE_NAME = 'grant-tracker-showcase';
+const PACKAGE_VERSION = '0.1.0';
 const PACKAGE_DESCRIPTION =
   'Grant Tracker — public cockpit demo. A federal grant-management command center: awards, budgets, RBAC-gated reallocation approvals, compliance (2 CFR 200), and SF-425 federal reporting. Mock data; the engine is private.';
 const STANDARD_DESCRIPTION =
@@ -17,7 +18,16 @@ const HTML_NAMESPACE = 'http://www.w3.org/1999/xhtml';
 const packageJson = JSON.parse(
   readFileSync(new URL('../package.json', import.meta.url), 'utf8'),
 );
+const packageLock = JSON.parse(
+  readFileSync(new URL('../package-lock.json', import.meta.url), 'utf8'),
+);
 const indexHtml = readFileSync(new URL('../index.html', import.meta.url), 'utf8');
+
+function significantYamlLines(yaml) {
+  return yaml
+    .split(/\r?\n/u)
+    .filter((line) => line.trim() && !line.trimStart().startsWith('#'));
+}
 
 function elementAttributes(element) {
   const attributes = new Map();
@@ -115,6 +125,24 @@ test('package metadata preserves the Grant Tracker identity', () => {
   assert.match(packageJson.description, new RegExp(`^${PRODUCT_NAME}\\b`));
 });
 
+test('package and lockfile roots preserve the Grant Tracker showcase identity', () => {
+  assert.deepEqual(
+    {
+      package: [packageJson.name, packageJson.version],
+      lockfile: [packageLock.name, packageLock.version],
+      lockfileRoot: [
+        packageLock.packages[''].name,
+        packageLock.packages[''].version,
+      ],
+    },
+    {
+      package: [PACKAGE_NAME, PACKAGE_VERSION],
+      lockfile: [PACKAGE_NAME, PACKAGE_VERSION],
+      lockfileRoot: [PACKAGE_NAME, PACKAGE_VERSION],
+    },
+  );
+});
+
 test('package scripts expose each release sweep and aggregate release commands', () => {
   assert.deepEqual(
     {
@@ -133,6 +161,44 @@ test('package scripts expose each release sweep and aggregate release commands',
         'npm run build && npm run test:unit && npm run test:e2e && npm run test:sweeps',
     },
   );
+});
+
+test('CI runs the shared release command with pinned actions and Node', () => {
+  const workflow = readFileSync(
+    new URL('../.github/workflows/release.yml', import.meta.url),
+    'utf8',
+  );
+
+  assert.deepEqual(significantYamlLines(workflow), [
+    'name: Grant Tracker Release',
+    'on:',
+    '  push:',
+    '    branches:',
+    '      - main',
+    '  pull_request:',
+    '    branches:',
+    '      - main',
+    'permissions:',
+    '  contents: read',
+    'jobs:',
+    '  release:',
+    '    runs-on: ubuntu-24.04',
+    '    timeout-minutes: 15',
+    '    steps:',
+    '      - name: Checkout',
+    '        uses: actions/checkout@08eba0b27e820071cde6df949e0beb9ba4906955',
+    '      - name: Setup Node',
+    '        uses: actions/setup-node@49933ea5288caeca8642d1e84afbd3f7d6820020',
+    '        with:',
+    '          node-version: 24.16.0',
+    '          cache: npm',
+    '      - name: Install dependencies',
+    '        run: npm ci',
+    '      - name: Install Chromium',
+    '        run: npx playwright install --with-deps chromium',
+    '      - name: Verify release',
+    '        run: npm run test:release',
+  ]);
 });
 
 test('active head preserves the canonical title and descriptions', () => {
